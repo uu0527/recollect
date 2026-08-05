@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recollect"
+version = "0.1.0"
+description = "ReCollect (拾遗) - 收藏激活助手：将沉睡收藏转化为可检索的个人知识库"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "ReCollect Team" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "click>=8.1.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.65.0",
+    "pandas>=2.0.0",
+    "jsonschema>=4.19.0",
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+llm = [
+    "openai>=1.0.0",
+    "httpx>=0.25.0",
+]
+rag = [
+    "chromadb>=0.4.0",
+    "sentence-transformers>=2.2.0",
+]
+eval = [
+    "scikit-learn>=1.3.0",
+]
+feishu = [
+    # "lark-oapi>=1.0.0",
+]
+all = [
+    "recollect[llm,rag,eval,feishu]",
+]
+
+[project.scripts]
+recollect = "run:main"
+
+[tool.setuptools.packages.find]
+include = ["pipeline*", "memory*", "frontend*", "scripts*"]
