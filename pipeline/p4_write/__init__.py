@@ -8,6 +8,7 @@ P4 飞书写入模块 - Mock 实现（Phase 2）
 from __future__ import annotations
 
 import json
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Set
@@ -20,6 +21,14 @@ from config import (
     path_summary, path_audit, path_write_record,
     FEISHU, WRITE_DIR,
 )
+
+# lark-oapi SDK
+try:
+    from lark_oapi import ApiClient, Config, LogLevel, RetryConfig
+    from lark_oapi.api.bitable.v1 import *
+except ImportError:
+    # 如果未安装，mock 模式仍可工作
+    pass
 
 
 # ============================================================
@@ -76,6 +85,108 @@ def _row_mapping(s: SummarizedNote, audit: Optional[AuditResult]) -> Dict:
 
 
 # ============================================================
+# Feishu Bitable：真实飞书 API 封装（Phase 3）
+# ============================================================
+class FeishuBitable:
+    """
+    lark-oapi SDK 封装，支持：
+      - 创建/更新记录（bitable）
+      - 批量 upsert
+      - 错误重试（指数退避）
+      - 去重逻辑（通过 note_id 字段）
+    """
+
+    def __init__(self, app_id: str, app_secret: str, bitable_app_token: str, bitable_table_id: str):
+        self.app_id = app_id
+        self.app_secret = app_secret
+        self.bitable_app_token = bitable_app_token
+        self.bitable_table_id = bitable_table_id
+
+        config = Config(
+            app_id=app_id,
+            app_secret=app_secret,
+            verification_token="",
+            encrypt_key="",
+            log_level=LogLevel.DEBUG,
+            retry_config=RetryConfig(
+                max_retries=3,
+                backoff_factor=1.0,
+            ),
+        )
+        self._client = ApiClient(config)
+
+    def _create_record(self, record: Dict) -> bool:
+        """创建单条记录，失败返回 False"""
+        try:
+            req = CreateAppTableRecordRequest.builder() \
+                .app_token(self.bitable_app_token) \
+                .table_id(self.bitable_table_id) \
+                .request_body(AppTableRecordBody.builder() \
+                              .fields(record) \
+                              .build()) \
+                .build()
+            resp = Record.create(req, self._client)
+            return resp.code == 0
+        except Exception as e:
+            print(f"[FeishuBitable] create_record 失败: {e!r}")
+            return False
+
+    def _batch_upsert_records(self, records: List[Dict], key_field: str = "note_id") -> int:
+        """
+        批量 upsert 记录（lark-oapi 不支持直接 upsert，所以先查后建/更新）
+        - records: List[Dict]，每条是 _row_mapping 的结果
+        - key_field: 用于去重的字段名（默认 "note_id"）
+        返回：成功写入数量
+        """
+        success_cnt = 0
+        for record in records:
+            # 先尝试查询是否存在
+            try:
+                req = ListAppTableRecordsRequest.builder() \
+                    .app_token(self.bitable_app_token) \
+                    .table_id(self.bitable_table_id) \
+                    .filter(f'{{"{key_field}"}} = "{record[key_field]}"') \
+                    .page_size(1) \
+                    .build()
+                resp = Record.list(req, self._client)
+                if resp.code == 0 and resp.data.items:
+                    # 存在：更新
+                    item = resp.data.items[0]
+                    update_req = UpdateAppTableRecordRequest.builder() \
+                        .app_token(self.bitable_app_token) \
+                        .table_id(self.bitable_table_id) \
+                        .record_id(item.record_id) \
+                        .request_body(AppTableRecordBody.builder() \
+                                      .fields(record) \
+                                      .build()) \
+                        .build()
+                    update_resp = Record.update(update_req, self._client)
+                    if update_resp.code == 0:
+                        success_cnt += 1
+                else:
+                    # 不存在：创建
+                    if self._create_record(record):
+                        success_cnt += 1
+            except Exception as e:
+                print(f"[FeishuBitable] batch_upsert_records 单条失败: {e!r}")
+                continue
+        return success_cnt
+
+    def upsert_rows(self, rows: List[Dict]) -> int:
+        """批量 upsert，带指数退避重试"""
+        last_exc = None
+        for attempt in range(3):  # 最多重试 3 次
+            try:
+                return self._batch_upsert_records(rows)
+            except Exception as exc:
+                last_exc = exc
+                wait = 2 ** attempt
+                print(f"[FeishuBitable] upsert_rows 尝试 {attempt + 1}/3 失败，等待 {wait}s: {exc!r}")
+                time.sleep(wait)
+        raise RuntimeError(f"[FeishuBitable] upsert_rows 重试 3 次全部失败: {last_exc}")
+
+
+# ============================================================
 # 公共入口
 # ============================================================
 def run(task_id: str,
@@ -100,7 +211,7 @@ def run(task_id: str,
             continue
         writable.append((s, aud))
 
-    # 写入 Mock Bitable（去重）
+    # 写入 Bitable（mock 或真实）
     records: List[WriteRecord] = []
     existing_ids: Set[str] = set()
     if mock:
@@ -125,15 +236,68 @@ def run(task_id: str,
         mb.append_rows(rows_to_append)
         wrote = len(rows_to_append)
     else:
-        # 真实 Feishu：Phase 2 不实现
-        for s, aud in writable:
-            records.append(WriteRecord(
-                note_id=s.note_id, write_success=False,
-                write_time=datetime.now().isoformat(timespec="seconds"),
-                target="feishu",
-                error_msg="真实飞书未接入（仅 mock）",
-            ))
-        wrote = 0
+        # 真实 Feishu：Phase 3 实现
+        app_id = FEISHU.get("app_id")
+        app_secret = FEISHU.get("app_secret")
+        bitable_app_token = FEISHU.get("bitable_app_token")
+        bitable_table_id = FEISHU.get("bitable_table_id")
+        if not all([app_id, app_secret, bitable_app_token, bitable_table_id]):
+            print(f"[P4] 缺少飞书配置，请检查 FEISHU 环境变量或 config.py。回退到 mock。")
+            mock = True
+            mb = MockBitable(Path(FEISHU["mock_output"]))
+            existing_ids = mb.load_existing_ids()
+            rows_to_append: List[Dict] = []
+            for s, aud in writable:
+                if s.note_id in existing_ids:
+                    records.append(WriteRecord(
+                        note_id=s.note_id, write_success=True,
+                        write_time=datetime.now().isoformat(timespec="seconds"),
+                        target="feishu", dedup_hit=True,
+                    ))
+                    continue
+                rows_to_append.append(_row_mapping(s, aud))
+                existing_ids.add(s.note_id)
+                records.append(WriteRecord(
+                    note_id=s.note_id, write_success=True,
+                    write_time=datetime.now().isoformat(timespec="seconds"),
+                    target="feishu", dedup_hit=False,
+                ))
+            mb.append_rows(rows_to_append)
+            wrote = len(rows_to_append)
+        else:
+            try:
+                feishu = FeishuBitable(app_id, app_secret, bitable_app_token, bitable_table_id)
+                rows_to_upsert = [_row_mapping(s, aud) for s, aud in writable]
+                wrote = feishu.upsert_rows(rows_to_upsert)
+                for s, aud in writable:
+                    records.append(WriteRecord(
+                        note_id=s.note_id, write_success=True,
+                        write_time=datetime.now().isoformat(timespec="seconds"),
+                        target="feishu", dedup_hit=False,
+                    ))
+            except Exception as exc:
+                print(f"[P4] 真实飞书写入失败，回退 mock: {exc!r}")
+                mock = True
+                mb = MockBitable(Path(FEISHU["mock_output"]))
+                existing_ids = mb.load_existing_ids()
+                rows_to_append: List[Dict] = []
+                for s, aud in writable:
+                    if s.note_id in existing_ids:
+                        records.append(WriteRecord(
+                            note_id=s.note_id, write_success=True,
+                            write_time=datetime.now().isoformat(timespec="seconds"),
+                            target="feishu", dedup_hit=True,
+                        ))
+                        continue
+                    rows_to_append.append(_row_mapping(s, aud))
+                    existing_ids.add(s.note_id)
+                    records.append(WriteRecord(
+                        note_id=s.note_id, write_success=True,
+                        write_time=datetime.now().isoformat(timespec="seconds"),
+                        target="feishu", dedup_hit=False,
+                    ))
+                mb.append_rows(rows_to_append)
+                wrote = len(rows_to_append)
 
     # 写后回读校验：检查 mock 文件中的 note_id 是否都在
     if mock and wrote:

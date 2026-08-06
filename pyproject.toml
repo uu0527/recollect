@@ -42,7 +42,7 @@ eval = [
     "scikit-learn>=1.3.0",
 ]
 feishu = [
-    # "lark-oapi>=1.0.0",
+    "lark-oapi>=1.0.0",
 ]
 all = [
     "recollect[llm,rag,eval,feishu]",

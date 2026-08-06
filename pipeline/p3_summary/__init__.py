@@ -14,6 +14,8 @@ from schemas import (
     load_jsonl, dump_json,
 )
 from config import path_raw, path_screened, path_summary
+from pipeline._llm.factory import get_provider
+from pipeline._llm.prompts import get_prompt
 
 
 # ============================================================
@@ -143,7 +145,7 @@ def run(task_id: str,
         model_override: str | None = None,
         **kwargs) -> Path:
     """
-    P3 归纳：Mock 实现
+    P3 归纳：支持 mock 启发式 + 真实 LLM
     默认 only_decisions = ["keep", "review"]（跳过 drop）
     skip_multimodal：Phase 2 已是纯文本，占位兼容
     """
@@ -153,6 +155,16 @@ def run(task_id: str,
     }
     screened: List[ScreenedNote] = load_jsonl(str(path_screened(task_id)), ScreenedNote)
 
+    # 选择 provider 和 prompt
+    if model_override == "mock":
+        # Mock 启发式：保留 Phase 2 行为
+        provider_name = "mock"
+        system_prompt, output_schema = "", {}
+    else:
+        # 真实 LLM：使用 factory + prompts
+        provider = get_provider("p3")
+        system_prompt, output_schema = get_prompt("p3")
+
     out: List[SummarizedNote] = []
     for s in screened:
         if s.decision not in decisions:
@@ -160,30 +172,82 @@ def run(task_id: str,
         note = raw_map.get(s.note_id)
         if note is None:
             continue
-        l1, l2 = _classify(note.title, note.content)
-        tags = _pick_tags(note.title, note.content)
-        kps = _extract_key_points(note.content)
-        tldr = _make_tldr(note.title, kps, l1)
-        actionable = _make_actionable(note.title, note.content, l1, tags)
-        qflags: List[str] = []
-        if skip_multimodal and note.images:
-            qflags.append("skip_multimodal")
-        if len(kps) < 3:
-            qflags.append("low_points_count")
-        ctype = "图文" if note.images else "视频" if any(t in tags for t in ["视频"]) else "图文"
-        out.append(SummarizedNote(
-            note_id=note.note_id,
-            title=note.title,
-            url=note.url,
-            category_l1=l1,
-            category_l2=l2,
-            tags=tags,
-            tldr=tldr,
-            key_points=kps,
-            actionable=actionable,
-            content_type=ctype,
-            quality_flags=qflags,
-        ))
+
+        if model_override == "mock":
+            # Phase 2 启发式逻辑
+            l1, l2 = _classify(note.title, note.content)
+            tags = _pick_tags(note.title, note.content)
+            kps = _extract_key_points(note.content)
+            tldr = _make_tldr(note.title, kps, l1)
+            actionable = _make_actionable(note.title, note.content, l1, tags)
+            qflags: List[str] = []
+            if skip_multimodal and note.images:
+                qflags.append("skip_multimodal")
+            if len(kps) < 3:
+                qflags.append("low_points_count")
+            ctype = "图文" if note.images else "视频" if any(t in tags for t in ["视频"]) else "图文"
+            result = SummarizedNote(
+                note_id=note.note_id,
+                title=note.title,
+                url=note.url,
+                category_l1=l1,
+                category_l2=l2,
+                tags=tags,
+                tldr=tldr,
+                key_points=kps,
+                actionable=actionable,
+                content_type=ctype,
+                quality_flags=qflags,
+            )
+        else:
+            # Phase 3 真实 LLM 调用
+            user_content = f"笔记标题：{note.title}\n笔记内容：{note.content}\n元数据：{note.metadata}" + \
+                           f"\n筛选决策：{s.decision}，置信度：{s.ad_confidence}，理由：{s.reason}"
+            try:
+                raw_result = provider.json_complete(system_prompt, user_content, schema=output_schema)
+                # 填充 note_id / url / content_type 并映射到 SummarizedNote
+                result = SummarizedNote(
+                    note_id=note.note_id,
+                    title=note.title,
+                    url=note.url,
+                    category_l1=raw_result.get("category_l1", "知识管理"),
+                    category_l2=raw_result.get("category_l2", "综合"),
+                    tags=raw_result.get("tags", ["其他"]),
+                    tldr=raw_result.get("tldr", "无摘要"),
+                    key_points=raw_result.get("key_points", ["无要点"]),
+                    actionable=raw_result.get("actionable", "无建议"),
+                    content_type="图文",  # 多模态由上层控制
+                    quality_flags=raw_result.get("quality_flags", []),
+                )
+            except Exception as exc:
+                # LLM 失败回退 mock
+                print(f"[P3] LLM 调用失败，回退 mock: {exc!r}")
+                l1, l2 = _classify(note.title, note.content)
+                tags = _pick_tags(note.title, note.content)
+                kps = _extract_key_points(note.content)
+                tldr = _make_tldr(note.title, kps, l1)
+                actionable = _make_actionable(note.title, note.content, l1, tags)
+                qflags: List[str] = []
+                if skip_multimodal and note.images:
+                    qflags.append("skip_multimodal")
+                if len(kps) < 3:
+                    qflags.append("low_points_count")
+                ctype = "图文" if note.images else "视频" if any(t in tags for t in ["视频"]) else "图文"
+                result = SummarizedNote(
+                    note_id=note.note_id,
+                    title=note.title,
+                    url=note.url,
+                    category_l1=l1,
+                    category_l2=l2,
+                    tags=tags,
+                    tldr=tldr,
+                    key_points=kps,
+                    actionable=actionable,
+                    content_type=ctype,
+                    quality_flags=qflags,
+                )
+
+        out.append(result)
 
     out_path = path_summary(task_id)
     dump_json(str(out_path), out)

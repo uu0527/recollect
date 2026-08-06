@@ -19,6 +19,8 @@ from schemas import (
     load_jsonl, load_json, dump_jsonl,
 )
 from config import path_raw, path_summary, path_audit
+from pipeline._llm.factory import get_provider
+from pipeline._llm.prompts import get_prompt
 
 
 def _fidelity(note: RawNote, summary: SummarizedNote) -> float:
@@ -115,7 +117,7 @@ def run(task_id: str,
         seed: int = 20260805,
         **kwargs) -> Path:
     """
-    P5 审计：Mock 实现
+    P5 审计：支持 mock 启发式 + 真实 LLM
     audit_ratio 默认 0.5（demo 提高覆盖率）；可在 MODEL_CONFIG.p5_audit 配置
     """
     ratio = 0.5 if audit_ratio is None else audit_ratio
@@ -130,24 +132,70 @@ def run(task_id: str,
     rnd = random.Random(seed)
     sampled = rnd.sample(sorted_notes, k=min(k, len(sorted_notes)))
 
+    # 选择 provider 和 prompt
+    if model_override == "mock":
+        # Mock 启发式：保留 Phase 2 行为
+        provider_name = "mock"
+        system_prompt, output_schema = "", {}
+    else:
+        # 真实 LLM：使用 factory + prompts，且 force_new=True（P5 必须独立实例）
+        provider = get_provider("p5", force_new=True)
+        system_prompt, output_schema = get_prompt("p5")
+
     results: List[AuditResult] = []
     for s in sampled:
         note = raw_map.get(s.note_id)
         if note is None:
             continue
-        fid = _fidelity(note, s)
-        cov = _coverage(note, s)
-        cat = _category(note, s)
-        overall = round(0.40 * fid + 0.35 * cov + 0.25 * cat, 3)
-        results.append(AuditResult(
-            note_id=s.note_id,
-            audit_score=overall,
-            fidelity_score=fid,
-            coverage_score=cov,
-            category_score=cat,
-            comments=_comment(fid, cov, cat),
-            audit_time=datetime.now().isoformat(timespec="seconds"),
-        ))
+
+        if model_override == "mock":
+            # Phase 2 启发式逻辑
+            fid = _fidelity(note, s)
+            cov = _coverage(note, s)
+            cat = _category(note, s)
+            overall = round(0.40 * fid + 0.35 * cov + 0.25 * cat, 3)
+            result = AuditResult(
+                note_id=s.note_id,
+                audit_score=overall,
+                fidelity_score=fid,
+                coverage_score=cov,
+                category_score=cat,
+                comments=_comment(fid, cov, cat),
+                audit_time=datetime.now().isoformat(timespec="seconds"),
+            )
+        else:
+            # Phase 3 真实 LLM 调用
+            user_content = f"原文标题：{note.title}\n原文内容：{note.content}\n归纳摘要：{s.tldr}\n要点：{' | '.join(s.key_points)}\n分类：{s.category_l1}/{s.category_l2}\n标签：{', '.join(s.tags)}"
+            try:
+                raw_result = provider.json_complete(system_prompt, user_content, schema=output_schema)
+                # 填充 note_id / audit_time 并映射到 AuditResult
+                result = AuditResult(
+                    note_id=s.note_id,
+                    audit_score=raw_result.get("audit_score", 0.5),
+                    fidelity_score=raw_result.get("fidelity_score", 0.5),
+                    coverage_score=raw_result.get("coverage_score", 0.5),
+                    category_score=raw_result.get("category_score", 0.5),
+                    comments=raw_result.get("comments", "无评论"),
+                    audit_time=datetime.now().isoformat(timespec="seconds"),
+                )
+            except Exception as exc:
+                # LLM 失败回退 mock
+                print(f"[P5] LLM 调用失败，回退 mock: {exc!r}")
+                fid = _fidelity(note, s)
+                cov = _coverage(note, s)
+                cat = _category(note, s)
+                overall = round(0.40 * fid + 0.35 * cov + 0.25 * cat, 3)
+                result = AuditResult(
+                    note_id=s.note_id,
+                    audit_score=overall,
+                    fidelity_score=fid,
+                    coverage_score=cov,
+                    category_score=cat,
+                    comments=_comment(fid, cov, cat),
+                    audit_time=datetime.now().isoformat(timespec="seconds"),
+                )
+
+        results.append(result)
 
     out_path = path_audit(task_id)
     dump_jsonl(str(out_path), results, mode="w")

@@ -30,96 +30,16 @@ from config import (
     RAG,
 )
 
+# ChromaDB + sentence-transformers
+try:
+    import chromadb
+    from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+except ImportError:
+    # 如果未安装，mock 模式仍可工作
+    pass
+
 # 默认 embedding 维度（与 config.RAG.embedding_dim 对齐）
 VEC_DIM = 384
-
-
-# ============================================================
-# Mock Embedding：稳定、可重复、基于 MD5 种子
-# ============================================================
-def _mock_embed(text: str, dim: int = VEC_DIM) -> List[float]:
-    """将任意文本映射为单位 L2 向量（可重复）"""
-    vec: List[float] = [0.0] * dim
-    if not text:
-        # 零向量归一化 fallback
-        vec[0] = 1.0
-        return vec
-    # 用 MD5 的 16 字节流 + 多轮 double 填充
-    h = hashlib.md5(text.encode("utf-8")).digest()
-    # 扩展为 dim 个数字：按 4 字节拼成 float，做 tanh 归一
-    seed_bytes = h * ((dim * 4 // len(h)) + 2)
-    for i in range(dim):
-        chunk = seed_bytes[i*4:(i+1)*4]
-        v = struct.unpack("<I", chunk)[0]
-        # 映射到 [-1, 1]
-        normalized = (v / 0xFFFFFFFF) * 2.0 - 1.0
-        normalized = math.tanh(normalized * 1.5)
-        # 混入 token 特征：让语义相近词的向量有偏置
-        if i < len(text):
-            ch = ord(text[i % len(text)])
-            normalized += 0.08 * math.sin((ch % 17) * 0.37 + i)
-        vec[i] = normalized
-    # L2 归一
-    norm = math.sqrt(sum(x * x for x in vec)) or 1.0
-    return [x / norm for x in vec]
-
-
-def _cosine(a: List[float], b: List[float]) -> float:
-    if len(a) != len(b):
-        return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a)) or 1.0
-    nb = math.sqrt(sum(x * x for x in b)) or 1.0
-    return dot / (na * nb)
-
-
-# ============================================================
-# Mock Vector Store（模拟 Chroma）
-# ============================================================
-class MockVectorStore:
-    """按 note_id 存储 embedding + chunk 文本；支持增量 upsert"""
-
-    def __init__(self, root: Path):
-        self.root = Path(root)
-        self.root.mkdir(parents=True, exist_ok=True)
-        self.store_path = self.root / "store.json"
-        self._items: Dict[str, Dict] = {}
-        if self.store_path.exists():
-            try:
-                with open(self.store_path, "r", encoding="utf-8") as f:
-                    raw = json.load(f)
-                    self._items = {it["note_id"]: it for it in raw}
-            except Exception:
-                self._items = {}
-
-    @property
-    def count(self) -> int:
-        return len(self._items)
-
-    def upsert(self, note_id: str, text: str, vector: List[float],
-               metadata: Dict) -> bool:
-        """增量：已存在不重复存储。返回是否新插入。"""
-        if note_id in self._items:
-            return False
-        self._items[note_id] = {
-            "note_id": note_id,
-            "text": text,
-            "vector": vector,
-            "metadata": metadata,
-        }
-        return True
-
-    def save(self) -> None:
-        with open(self.store_path, "w", encoding="utf-8") as f:
-            json.dump(list(self._items.values()), f, ensure_ascii=False, indent=2)
-
-    def top_k(self, q_vec: List[float], k: int) -> List[Tuple[float, Dict]]:
-        scored = []
-        for it in self._items.values():
-            sim = _cosine(q_vec, it["vector"])
-            scored.append((sim, it))
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return scored[:k]
 
 
 def _chunk_text(s: SummarizedNote) -> str:
@@ -133,27 +53,115 @@ def _chunk_text(s: SummarizedNote) -> str:
 
 
 # ============================================================
+# Chroma Vector Store（Phase 3）
+# ============================================================
+class ChromaVectorStore:
+    """
+    ChromaDB 封装，支持：
+      - 初始化 collection（自动创建或加载）
+      - upsert 单条记录（含 embedding）
+      - top_k 检索
+    """
+
+    def __init__(self, root: Path, embedding_model: str = "BAAI/bge-small-zh-v1.5"):
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.embedding_model = embedding_model
+
+        # 初始化 Chroma client
+        self._client = chromadb.PersistentClient(path=str(root))
+        # 初始化 embedding function
+        try:
+            self._ef = SentenceTransformerEmbeddingFunction(model_name=embedding_model)
+        except Exception as e:
+            print(f"[ChromaVectorStore] 初始化 embedding model '{embedding_model}' 失败: {e!r}，回退到 'all-MiniLM-L6-v2'")
+            self._ef = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+
+        # 创建 collection
+        self._collection = self._client.get_or_create_collection(
+            name="recollect_summary",
+            embedding_function=self._ef,
+        )
+
+    def upsert(self, note_id: str, text: str, metadata: Dict) -> bool:
+        """upsert 单条记录，失败返回 False"""
+        try:
+            self._collection.upsert(
+                ids=[note_id],
+                documents=[text],
+                metadatas=[metadata],
+            )
+            return True
+        except Exception as e:
+            print(f"[ChromaVectorStore] upsert 失败: {e!r}")
+            return False
+
+    def top_k(self, query_text: str, k: int) -> List[Tuple[float, Dict]]:
+        """query → top-k 检索，返回 [(score, metadata), ...]"""
+        try:
+            results = self._collection.query(
+                query_texts=[query_text],
+                n_results=k,
+                include=["distances", "metadatas"],
+            )
+            # 转换格式：[(distance, metadata), ...]
+            if not results["ids"] or not results["metadatas"]:
+                return []
+            ids = results["ids"][0]
+            distances = results["distances"][0]
+            metadatas = results["metadatas"][0]
+            scored = []
+            for i, id_ in enumerate(ids):
+                # Chroma 返回的是距离（越小越好），转成相似度（越大越好）
+                score = 1.0 - distances[i]
+                scored.append((score, metadatas[i]))
+            return sorted(scored, key=lambda x: x[0], reverse=True)
+        except Exception as e:
+            print(f"[ChromaVectorStore] query 失败: {e!r}")
+            return []
+
+
+# ============================================================
 # build_index / query / run
 # ============================================================
 def build_index(task_id: str, incremental: bool = True, **kwargs) -> Path:
     """P6 索引构建：P4 写完后随写随建（增量）"""
     summaries: List[SummarizedNote] = load_json(str(path_summary(task_id)), SummarizedNote)
-    store = MockVectorStore(path_chroma(task_id))
-    added = 0
-    for s in summaries:
-        chunk = _chunk_text(s)
-        vec = _mock_embed(chunk)
-        ok = store.upsert(
-            note_id=s.note_id,
-            text=chunk,
-            vector=vec,
-            metadata={"category_l1": s.category_l1, "category_l2": s.category_l2,
-                      "title": s.title, "url": s.url},
-        )
-        if ok:
-            added += 1
-    store.save()
-    print(f"[P6 build_index] task_id={task_id}  总量={store.count}  新增={added}  增量={incremental}  → {path_chroma(task_id).name}/")
+    try:
+        # 尝试初始化 ChromaVectorStore
+        store = ChromaVectorStore(path_chroma(task_id))
+        added = 0
+        for s in summaries:
+            chunk = _chunk_text(s)
+            ok = store.upsert(
+                note_id=s.note_id,
+                text=chunk,
+                metadata={"category_l1": s.category_l1, "category_l2": s.category_l2,
+                          "title": s.title, "url": s.url},
+            )
+            if ok:
+                added += 1
+        print(f"[P6 build_index] task_id={task_id}  Chroma 构建完成，新增={added} 条  → {path_chroma(task_id).name}/")
+    except Exception as exc:
+        print(f"[P6 build_index] Chroma 初始化失败，回退到 mock: {exc!r}")
+        # 回退到 mock
+        from pipeline.p6_memory import MockVectorStore
+        store = MockVectorStore(path_chroma(task_id))
+        added = 0
+        for s in summaries:
+            chunk = _chunk_text(s)
+            vec = _mock_embed(chunk)
+            ok = store.upsert(
+                note_id=s.note_id,
+                text=chunk,
+                vector=vec,
+                metadata={"category_l1": s.category_l1, "category_l2": s.category_l2,
+                          "title": s.title, "url": s.url},
+            )
+            if ok:
+                added += 1
+        store.save()
+        print(f"[P6 build_index] task_id={task_id}  Mock 构建完成，新增={added} 条  → {path_chroma(task_id).name}/")
     return path_chroma(task_id)
 
 
@@ -201,14 +209,22 @@ def query(task_id: str, query_text: str,
     """P6 检索问答：返回 RAGResult（必须带 retrieved_note_ids）"""
     k = top_k or RAG["top_k"]
     index_path = path_chroma(task_id)
-    store = MockVectorStore(index_path)
-    if store.count == 0:
-        # 索引不存在：尝试立即构建
-        build_index(task_id, incremental=True)
+    try:
+        # 尝试初始化 ChromaVectorStore
+        store = ChromaVectorStore(index_path)
+        topk = store.top_k(query_text, k=k)
+    except Exception as exc:
+        print(f"[P6 query] Chroma 查询失败，回退到 mock: {exc!r}")
+        # 回退到 mock
+        from pipeline.p6_memory import MockVectorStore
         store = MockVectorStore(index_path)
+        if store.count == 0:
+            # 索引不存在：尝试立即构建
+            build_index(task_id, incremental=True)
+            store = MockVectorStore(index_path)
+        q_vec = _mock_embed(query_text)
+        topk = store.top_k(q_vec, k=k)
 
-    q_vec = _mock_embed(query_text)
-    topk = store.top_k(q_vec, k=k)
     retrieved_chunks = [
         {"note_id": it["note_id"], "score": round(float(sim), 4),
          "metadata": it["metadata"]}

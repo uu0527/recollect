@@ -10,6 +10,8 @@ from typing import Dict, List, Tuple
 
 from schemas import RawNote, ScreenedNote, load_jsonl, dump_jsonl
 from config import path_raw, path_screened, P2_THRESHOLDS
+from pipeline._llm.factory import get_provider
+from pipeline._llm.prompts import get_prompt
 
 
 # ============================================================
@@ -124,7 +126,7 @@ def _route_decision(ad_conf: float, vs: int, th: Dict) -> Tuple[str, bool]:
 def run(task_id: str, thresholds: Dict | None = None,
         model_override: str | None = None, **kwargs) -> Path:
     """
-    P2 筛选：Mock 实现
+    P2 筛选：支持 mock 启发式 + 真实 LLM
     输入：01_raw/{task_id}_notes.jsonl
     输出：02_screened/{task_id}_screened.jsonl
     """
@@ -132,21 +134,67 @@ def run(task_id: str, thresholds: Dict | None = None,
     raw_notes: List[RawNote] = load_jsonl(str(path_raw(task_id)), RawNote)
     results: List[ScreenedNote] = []
 
+    # 选择 provider 和 prompt
+    if model_override == "mock":
+        # Mock 启发式：保留 Phase 2 行为
+        provider_name = "mock"
+        system_prompt, output_schema = "", {}
+    else:
+        # 真实 LLM：使用 factory + prompts
+        provider = get_provider("p2")
+        system_prompt, output_schema = get_prompt("p2")
+
     cnt = {"keep": 0, "review": 0, "drop": 0}
     for note in raw_notes:
-        ad_conf, vs, reason = _heuristic_screen(note)
-        decision, is_ad = _route_decision(ad_conf, vs, th)
-        ct = _infer_content_type(note.title, note.content)
-        results.append(ScreenedNote(
-            note_id=note.note_id,
-            decision=decision,
-            ad_confidence=round(ad_conf, 3),
-            is_ad=is_ad,
-            content_type=ct,
-            value_score=vs,
-            reason=reason,
-        ))
-        cnt[decision] += 1
+        # 构造 user prompt
+        user_content = f"笔记标题：{note.title}\n笔记内容：{note.content}\n元数据：{note.metadata}"
+
+        if model_override == "mock":
+            # Phase 2 启发式逻辑
+            ad_conf, vs, reason = _heuristic_screen(note)
+            decision, is_ad = _route_decision(ad_conf, vs, th)
+            ct = _infer_content_type(note.title, note.content)
+            result = ScreenedNote(
+                note_id=note.note_id,
+                decision=decision,
+                ad_confidence=round(ad_conf, 3),
+                is_ad=is_ad,
+                content_type=ct,
+                value_score=vs,
+                reason=reason,
+            )
+        else:
+            # Phase 3 真实 LLM 调用
+            try:
+                raw_result = provider.json_complete(system_prompt, user_content, schema=output_schema)
+                # 填充 note_id 并映射到 ScreenedNote
+                result = ScreenedNote(
+                    note_id=note.note_id,
+                    decision=raw_result.get("decision", "review"),
+                    ad_confidence=raw_result.get("ad_confidence", 0.0),
+                    is_ad=raw_result.get("is_ad", False),
+                    content_type=raw_result.get("content_type", "其他"),
+                    value_score=raw_result.get("value_score", 3),
+                    reason=raw_result.get("reason", "无理由"),
+                )
+            except Exception as exc:
+                # LLM 失败回退 mock
+                print(f"[P2] LLM 调用失败，回退 mock: {exc!r}")
+                ad_conf, vs, reason = _heuristic_screen(note)
+                decision, is_ad = _route_decision(ad_conf, vs, th)
+                ct = _infer_content_type(note.title, note.content)
+                result = ScreenedNote(
+                    note_id=note.note_id,
+                    decision=decision,
+                    ad_confidence=round(ad_conf, 3),
+                    is_ad=is_ad,
+                    content_type=ct,
+                    value_score=vs,
+                    reason=reason,
+                )
+
+        results.append(result)
+        cnt[result.decision] += 1
 
     out_path = path_screened(task_id)
     dump_jsonl(str(out_path), results, mode="w")
