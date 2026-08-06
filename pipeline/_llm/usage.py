@@ -27,7 +27,8 @@ _lock = threading.Lock()
 # 每 1K token 的成本（USD，近似；可配置覆盖）
 _COST_PER_1K: Dict[str, Dict[str, float]] = {
     "deepseek": {"input": 0.0011, "output": 0.0022},   # deepseek-chat 官方价
-    "hunyuan": {"input": 0.0004, "output": 0.0008},    # 混元 turbo 官方价（约）
+    "zhipu":    {"input": 0.0001, "output": 0.0002},   # glm-4-flash 官方价（约 ¥0.0007/1K in）
+    "hunyuan": {"input": 0.0004, "output": 0.0008},    # 混元 turbo 官方价（约，兼容保留）
     "qwen":    {"input": 0.0005, "output": 0.0010},    # qwen-plus 约
     "kimi":    {"input": 0.0006, "output": 0.0012},    # moonshot-v1-8k 约
     "openai":  {"input": 0.0005, "output": 0.0015},    # gpt-4o-mini 约

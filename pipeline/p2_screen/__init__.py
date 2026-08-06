@@ -174,7 +174,7 @@ def run(task_id: str, thresholds: Dict | None = None,
     raw_notes: List[RawNote] = load_jsonl(str(path_raw(task_id)), RawNote)
     results: List[ScreenedNote] = []
 
-    # 选择 provider 和 prompt（Phase 3.5: 走 Model Router，P2 默认混元低成本）
+    # 选择 provider 和 prompt（Phase 3.5: 走 Model Router，P2 默认智谱低成本）
     if model_override == "mock":
         # Mock 启发式：保留 Phase 2 行为
         use_heuristic = True

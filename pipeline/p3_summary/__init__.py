@@ -204,7 +204,7 @@ def run(task_id: str,
         # Mock 启发式：保留 Phase 2 行为
         use_heuristic = True
     else:
-        # 尝试真实 LLM（智能路由：简单内容→混元，复杂/技术→DeepSeek）
+        # 尝试真实 LLM（智能路由：简单内容→智谱，复杂/技术→DeepSeek）
         provider = get_stage_provider("p3", task_id=task_id,
                                       task_type="summary", text="")
         use_heuristic = (provider.provider_name == "mock")

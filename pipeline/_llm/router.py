@@ -46,7 +46,7 @@ STAGE_DEFAULT_LEVEL: Dict[str, str] = {
 }
 
 # provider 角色
-ROLE_COST = "hunyuan"      # 成本优化模型
+ROLE_COST = "zhipu"        # 成本优化模型 + Judge（智谱 GLM）
 ROLE_QUALITY = "deepseek"  # 高质量推理模型
 ROLE_FALLBACK = "qwen"     # 兜底模型（key 可用时承担任何任务）
 
@@ -346,7 +346,7 @@ def _last_used_provider(stage: str) -> str | None:
 
 # provider → 环境变量 key 名
 _PROVIDER_KEY_ENV = {
-    "hunyuan": "HUNYUAN_API_KEY",
+    "zhipu": "ZHIPU_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
     "qwen": "QWEN_API_KEY",
     "kimi": "KIMI_API_KEY",
