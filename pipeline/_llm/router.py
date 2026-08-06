@@ -49,6 +49,20 @@ STAGE_DEFAULT_LEVEL: Dict[str, str] = {
 ROLE_COST = "zhipu"        # 成本优化模型 + Judge（智谱 GLM）
 ROLE_QUALITY = "deepseek"  # 高质量推理模型
 ROLE_FALLBACK = "qwen"     # 兜底模型（key 可用时承担任何任务）
+ROLE_VISION = "qwen_vision"  # 视觉专用模型（Qwen3-VL-Plus，仅视觉任务触发）
+
+# 视觉任务特征关键词（出现任一 → 走 Vision）
+_VISION_KEYWORDS = [
+    "图片", "图像", "截图", "ocr", "视觉", "看这张", "识别图中", "图片中",
+    "读图", "图表", "流程图", "示意图", "海报", "二维码", "界面", "ui",
+    "ui分析", "页面截图", "代码截图", "扫描件", "发票", "证件", "照片",
+]
+
+# 视觉任务类型（task_type 命中 → 走 Vision）
+_VISION_TASK_TYPES = {
+    "vision", "image", "ocr", "screenshot", "ui_analysis",
+    "image_understanding", "visual_reasoning", "document_image",
+}
 
 # 复杂任务特征关键词（技术/推理/多步骤）
 _COMPLEX_KEYWORDS = [
@@ -110,6 +124,32 @@ def _current_default_model(schedule_enabled: bool, schedule: List[Dict]) -> str:
             if now >= start or now <= end:
                 return slot.get("default_model", ROLE_COST)
     return ROLE_COST
+
+
+# ----------------------------------------------------------------
+# Vision 任务识别
+# ----------------------------------------------------------------
+_VISION_RE = re.compile("|".join(re.escape(k) for k in _VISION_KEYWORDS), re.IGNORECASE)
+
+
+def detect_vision(task_type: str = "", text: str = "", images=None) -> bool:
+    """
+    判断当前任务是否需要 Vision 模型（qwen3-vl-plus）。
+    触发条件（任一命中）：
+      - task_type 属于视觉任务类型
+      - images 参数非空（有图片输入）
+      - 文本包含视觉关键词（OCR/截图/看图/图表/UI 等）
+    """
+    if images:
+        # 过滤空/无效图片条目
+        valid = [i for i in images if i]
+        if valid:
+            return True
+    if task_type and task_type.lower() in _VISION_TASK_TYPES:
+        return True
+    if text and _VISION_RE.search(text):
+        return True
+    return False
 
 
 # ----------------------------------------------------------------
@@ -217,15 +257,41 @@ class ModelRouter:
         force_new: bool = False,
         force_model: Optional[str] = None,
         fallback_reason: str = "",
+        images=None,
     ) -> LLMClient:
         """
         返回 LLMClient（与 get_provider 同接口，调用方零感知）。
         - 已按路由规则选择 provider
+        - Vision 任务（images 非空 / task_type 视觉 / 文本含视觉关键词）
+          → 自动切 qwen_vision（qwen3-vl-plus）
+        - Vision 不可用（无 key / 失败）→ fallback 到文本模型并打 warning
         - 真实 provider 包装为 TrackedLLMClient（自动统计 token）
         """
+        # === Vision 优先路由 ===
+        if detect_vision(task_type=task_type, text=text, images=images):
+            if _provider_available(ROLE_VISION):
+                print(f"[MODEL ROUTER] Task type: vision | Selected model: qwen3-vl-plus | Provider: {ROLE_VISION}")
+                client = _build_provider(ROLE_VISION, stage, force_new=force_new)
+                if client.provider_name != "mock":
+                    return TrackedLLMClient(
+                        inner=client,
+                        provider=client.provider_name,
+                        stage=stage,
+                        task_id=task_id,
+                        task_type=task_type,
+                        level="VISION",
+                        route_reason="vision_task",
+                        images=images or [],
+                    )
+                print("[MODEL ROUTER] WARNING: qwen_vision key 缺失，fallback 到文本模型")
+            else:
+                print("[MODEL ROUTER] WARNING: qwen_vision 不可用（无 key），fallback 到文本模型")
+
         provider_name, level, reason = self.resolve(
             stage, task_type=task_type, text=text, force_model=force_model
         )
+        # 普通任务日志
+        print(f"[MODEL ROUTER] Task type: text | Selected model: {provider_name} | Provider: {provider_name}")
 
         # 从 factory 构建
         client = _build_provider(provider_name, stage, force_new=force_new)
@@ -254,7 +320,7 @@ class TrackedLLMClient(LLMClient):
 
     def __init__(self, inner: LLMClient, provider: str, stage: str,
                  task_id: str = "", task_type: str = "",
-                 level: str = "", route_reason: str = ""):
+                 level: str = "", route_reason: str = "", images=None):
         self._inner = inner
         self.provider_name = provider
         self.stage = stage
@@ -263,10 +329,13 @@ class TrackedLLMClient(LLMClient):
         self.level = level
         self.route_reason = route_reason
         self.model = getattr(inner, "model", provider)
+        self.images = images or []
 
     def complete(self, system: str, user: str, **kw) -> str:
         t0 = time.time()
         try:
+            if self.images:
+                kw["images"] = kw.get("images") or self.images
             raw = self._inner.complete(system, user, **kw)
             self._log_usage(system, user, kw, raw=raw, success=True)
             return raw
@@ -277,6 +346,8 @@ class TrackedLLMClient(LLMClient):
     def json_complete(self, system: str, user: str, schema=None, **kw) -> Dict[str, Any]:
         t0 = time.time()
         try:
+            if self.images:
+                kw["images"] = kw.get("images") or self.images
             result = self._inner.json_complete(system, user, schema=schema, **kw)
             self._log_usage(system, user, kw, raw=str(result), success=True)
             return result
@@ -349,6 +420,7 @@ _PROVIDER_KEY_ENV = {
     "zhipu": "ZHIPU_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
     "qwen": "QWEN_API_KEY",
+    "qwen_vision": "DASHSCOPE_API_KEY",
     "kimi": "KIMI_API_KEY",
     "openai": "OPENAI_API_KEY",
 }
@@ -367,6 +439,9 @@ def _provider_available(provider: str) -> bool:
     if not env_name:
         return False
     key = os.environ.get(env_name, "").strip()
+    # qwen_vision 支持 DASHSCOPE_API_KEY 回退 QWEN_API_KEY
+    if not key and provider == "qwen_vision":
+        key = os.environ.get("QWEN_API_KEY", "").strip()
     if not key:
         return False
     if key.lower() in _PLACEHOLDER_KEYS:
@@ -397,12 +472,14 @@ def get_stage_provider(
     text: str = "",
     force_new: bool = False,
     force_model: Optional[str] = None,
+    images=None,
 ) -> LLMClient:
     """
     与 get_provider(stage) 签名兼容的智能路由入口。
 
     P2:   get_stage_provider("p2", task_id=tid, task_type="screen", text=note.content)
-    P3:   get_stage_provider("p3", task_id=tid, task_type="summary", text=note.content)
+    P3:   get_stage_provider("p3", task_id=tid, task_type="summary", text=note.content,
+                             images=note.images)  # 有图片 → 自动切 qwen3-vl-plus
     P5:   get_stage_provider("p5", task_id=tid, task_type="audit", text=raw_content, force_new=True)
     """
     return _get_router().get_provider(
@@ -412,11 +489,22 @@ def get_stage_provider(
         text=text,
         force_new=force_new,
         force_model=force_model,
+        images=images,
     )
 
 
-def debug_route(stage: str, task_type: str = "", text: str = "") -> Dict:
+def debug_route(stage: str, task_type: str = "", text: str = "", images=None) -> Dict:
     """调试工具：查看某个任务会被路由到哪个模型"""
+    if detect_vision(task_type=task_type, text=text, images=images):
+        return {
+            "stage": stage,
+            "task_type": task_type or "-",
+            "level": "VISION",
+            "provider": ROLE_VISION,
+            "reason": "vision_task",
+            "text_len": len(text or ""),
+            "images": len(images or []),
+        }
     provider_name, level, reason = _get_router().resolve(stage, task_type=task_type, text=text)
     return {
         "stage": stage,
@@ -424,5 +512,6 @@ def debug_route(stage: str, task_type: str = "", text: str = "") -> Dict:
         "level": level,
         "provider": provider_name,
         "reason": reason,
-        "text_len": len(text),
+        "text_len": len(text or ""),
+        "images": len(images or []),
     }

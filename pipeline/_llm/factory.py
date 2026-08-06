@@ -67,7 +67,7 @@ def _build(provider_name: str, temperature: float, cfg: Dict[str, Any]) -> LLMCl
     if provider_name == "mock":
         return MockLLMClient(temperature=temperature)
 
-    if provider_name in ("openai", "kimi", "deepseek", "qwen", "hunyuan","zhipu"):
+    if provider_name in ("openai", "kimi", "deepseek", "qwen", "hunyuan", "zhipu", "qwen_vision"):
         from pipeline._llm.openai_provider import OpenAICompatibleClient
 
         _key_env = {
@@ -77,6 +77,7 @@ def _build(provider_name: str, temperature: float, cfg: Dict[str, Any]) -> LLMCl
             "qwen": "qwen_api_key",
             "hunyuan": "hunyuan_api_key",
             "zhipu": "zhipu_api_key",
+            "qwen_vision": "qwen_vision_api_key",
         }
         api_key: str = cfg.get(_key_env[provider_name], "")
         if not api_key:
@@ -100,5 +101,5 @@ def _build(provider_name: str, temperature: float, cfg: Dict[str, Any]) -> LLMCl
 
     raise ValueError(
         f"[LLM factory] 未知 provider: {provider_name!r}，"
-        f"可选: mock / openai / kimi / deepseek / qwen / hunyuan / zhipu"
+        f"可选: mock / openai / kimi / deepseek / qwen / hunyuan / zhipu / qwen_vision"
     )

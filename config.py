@@ -152,6 +152,12 @@ MODEL_CONFIG: dict = {
     "qwen_model":      os.environ.get("QWEN_MODEL", ""),
     "hunyuan_model":   os.environ.get("HUNYUAN_MODEL", ""),
     "zhipu_model":     os.environ.get("ZHIPU_MODEL", ""),
+
+    # === Qwen Vision（视觉专用，不参与默认路由）===
+    # key: 优先 DASHSCOPE_API_KEY，回退 QWEN_API_KEY（DashScope 同一 key）
+    "qwen_vision_api_key": (os.environ.get("DASHSCOPE_API_KEY", "")
+                            or os.environ.get("QWEN_API_KEY", "")),
+    "qwen_vision_model":  os.environ.get("QWEN_VISION_MODEL", "qwen3-vl-plus"),
 }
 
 # ============================================================

@@ -220,10 +220,12 @@ def run(task_id: str,
             continue
 
         if not use_heuristic:
-            # 每条 note 独立路由：根据内容复杂度决定是否升级 DeepSeek
+            # 每条 note 独立路由：有图片 → 自动切 qwen3-vl-plus（Vision）；
+            # 纯文本 → 按内容复杂度决定 DeepSeek/智谱
             provider = get_stage_provider("p3", task_id=task_id,
                                           task_type="summary",
-                                          text=note.title + "\n" + note.content)
+                                          text=note.title + "\n" + note.content,
+                                          images=note.images or None)
             use_heuristic = (provider.provider_name == "mock")
 
         if use_heuristic:

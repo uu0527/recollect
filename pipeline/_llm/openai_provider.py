@@ -22,6 +22,7 @@ _BASE_URLS: Dict[str, str] = {
     "kimi": "https://api.moonshot.cn/v1",
     "deepseek": "https://api.deepseek.com/v1",
     "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "qwen_vision": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "hunyuan": "https://api.hunyuan.cloud.tencent.com/v1",
     "zhipu": "https://open.bigmodel.cn/api/paas/v4",
 }
@@ -32,6 +33,7 @@ _DEFAULT_MODELS: Dict[str, str] = {
     "kimi": "moonshot-v1-8k",
     "deepseek": "deepseek-chat",
     "qwen": "qwen-plus",
+    "qwen_vision": "qwen3-vl-plus",
     "hunyuan": "hunyuan-turbo",
     "zhipu": "glm-4-flash",
 }
@@ -127,11 +129,32 @@ class OpenAICompatibleClient(LLMClient):
     # ----------------------------------------------------------------
 
     def _call_with_backoff(self, system: str, user: str, **kw) -> str:
-        """带指数退避的单次 API 调用"""
-        messages: List[Dict[str, str]] = [
+        """带指数退避的单次 API 调用。
+        支持 Vision：kw 可传 images=[url 或 base64 data-uri,...]，
+        将 user 消息构造为多模态 content 数组（openai 兼容格式）。
+        """
+        images: List[str] = kw.get("images", []) or []
+        messages: List[Dict] = [
             {"role": "system", "content": system},
-            {"role": "user", "content": user},
         ]
+        if images:
+            # 多模态消息：content 为 [{type:text},{type:image_url},...]
+            content: List[Dict[str, Any]] = [{"type": "text", "text": user}]
+            for img in images:
+                if img.startswith("data:") or img.startswith("http"):
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {"url": img},
+                    })
+                else:
+                    # 本地路径 → base64 data-uri
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {"url": _local_image_to_data_uri(img)},
+                    })
+            messages.append({"role": "user", "content": content})
+        else:
+            messages.append({"role": "user", "content": user})
         temperature = kw.get("temperature", self.temperature)
 
         last_exc: Exception | None = None
@@ -172,3 +195,17 @@ def _schema_hint(schema: Optional[Dict[str, Any]]) -> str:
         t = props.get(k, {}).get("type", "any")
         lines.append(f'  "{k}": <{t}>')
     return "{\n" + ",\n".join(lines) + "\n}"
+
+
+def _local_image_to_data_uri(path: str) -> str:
+    """本地图片路径 → base64 data URI（带 mime 前缀）"""
+    import base64
+    import mimetypes
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"图片不存在: {path}")
+    mime = mimetypes.guess_type(p.name)[0] or "image/png"
+    b64 = base64.b64encode(p.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{b64}"
