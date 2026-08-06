@@ -108,6 +108,29 @@ def _comment(fid: float, cov: float, cat: float) -> str:
     return "；".join(pieces)
 
 
+def _normalize_p5(raw: Dict) -> Dict:
+    """把 LLM 原始输出归一化到合法 AuditResult 字段（分数强制 0.0~1.0）"""
+    def _clamp(v, lo=0.0, hi=1.0):
+        try:
+            return round(max(lo, min(hi, float(v))), 3)
+        except (ValueError, TypeError):
+            return round((lo + hi) / 2, 3)
+
+    fid = _clamp(raw.get("fidelity_score", 0.5))
+    cov = _clamp(raw.get("coverage_score", 0.5))
+    cat = _clamp(raw.get("category_score", 0.5))
+    # 重算 audit_score（不信任 LLM 自己算的加权）
+    overall = round(0.40 * fid + 0.35 * cov + 0.25 * cat, 3)
+    comments = str(raw.get("comments", "LLM 审计")).strip() or "LLM 审计"
+    return {
+        "audit_score": overall,
+        "fidelity_score": fid,
+        "coverage_score": cov,
+        "category_score": cat,
+        "comments": comments,
+    }
+
+
 # ============================================================
 # 公共入口
 # ============================================================
@@ -165,18 +188,14 @@ def run(task_id: str,
                 audit_time=datetime.now().isoformat(timespec="seconds"),
             )
         else:
-            # Phase 3 真实 LLM 调用
+            # Phase 3 真实 LLM 调用（不使用 schema 校验，用后处理归一化）
             user_content = f"原文标题：{note.title}\n原文内容：{note.content}\n归纳摘要：{s.tldr}\n要点：{' | '.join(s.key_points)}\n分类：{s.category_l1}/{s.category_l2}\n标签：{', '.join(s.tags)}"
             try:
-                raw_result = provider.json_complete(system_prompt, user_content, schema=output_schema)
-                # 填充 note_id / audit_time 并映射到 AuditResult
+                raw_result = provider.json_complete(system_prompt, user_content, schema=None)
+                normalized = _normalize_p5(raw_result)
                 result = AuditResult(
                     note_id=s.note_id,
-                    audit_score=raw_result.get("audit_score", 0.5),
-                    fidelity_score=raw_result.get("fidelity_score", 0.5),
-                    coverage_score=raw_result.get("coverage_score", 0.5),
-                    category_score=raw_result.get("category_score", 0.5),
-                    comments=raw_result.get("comments", "无评论"),
+                    **normalized,
                     audit_time=datetime.now().isoformat(timespec="seconds"),
                 )
             except Exception as exc:

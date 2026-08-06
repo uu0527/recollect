@@ -133,9 +133,11 @@ MODEL_CONFIG: dict = {
     "openai_api_key":   os.environ.get("OPENAI_API_KEY", ""),
     "kimi_api_key":     os.environ.get("KIMI_API_KEY", ""),
     "deepseek_api_key": os.environ.get("DEEPSEEK_API_KEY", ""),
+    "qwen_api_key":     os.environ.get("QWEN_API_KEY", ""),
 
     # 可选：指定具体 model 名称（不填则用 provider 默认）
     "openai_model":    os.environ.get("OPENAI_MODEL", ""),
     "kimi_model":      os.environ.get("KIMI_MODEL", ""),
     "deepseek_model":  os.environ.get("DEEPSEEK_MODEL", ""),
+    "qwen_model":      os.environ.get("QWEN_MODEL", ""),
 }

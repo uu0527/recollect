@@ -121,6 +121,46 @@ def _route_decision(ad_conf: float, vs: int, th: Dict) -> Tuple[str, bool]:
 
 
 # ============================================================
+# LLM 输出归一化（后处理）
+# ============================================================
+_VALID_DECISIONS = {"keep", "review", "drop"}
+_VALID_CONTENT_TYPES = {"攻略", "测评", "教程", "资讯", "情绪", "其他"}
+
+def _normalize_p2(raw: Dict) -> Dict:
+    """把 LLM 原始输出归一化到合法 ScreenedNote 字段"""
+    decision = str(raw.get("decision", "")).lower().strip()
+    if decision not in _VALID_DECISIONS:
+        # 尝试映射常见同义词
+        mapping = {"reject": "drop", "remove": "drop", "keep": "keep",
+                   "retain": "keep", "review": "review", "unsure": "review",
+                   "maybe": "review", "pending": "review"}
+        decision = mapping.get(decision, "review")
+
+    ad_conf = float(raw.get("ad_confidence", 0.5))
+    ad_conf = max(0.0, min(1.0, ad_conf))
+
+    vs = int(raw.get("value_score", 3))
+    vs = max(1, min(5, vs))
+
+    ct = str(raw.get("content_type", "其他")).strip()
+    if ct not in _VALID_CONTENT_TYPES:
+        ct = "其他"
+
+    is_ad = raw.get("is_ad", ad_conf >= 0.7)
+    if not isinstance(is_ad, bool):
+        is_ad = bool(is_ad)
+
+    return {
+        "decision": decision,
+        "ad_confidence": round(ad_conf, 3),
+        "is_ad": is_ad,
+        "content_type": ct,
+        "value_score": vs,
+        "reason": str(raw.get("reason", "LLM 判定")),
+    }
+
+
+# ============================================================
 # 公共入口
 # ============================================================
 def run(task_id: str, thresholds: Dict | None = None,
@@ -165,18 +205,13 @@ def run(task_id: str, thresholds: Dict | None = None,
                 reason=reason,
             )
         else:
-            # Phase 3 真实 LLM 调用
+            # Phase 3 真实 LLM 调用（不使用 schema 校验，用后处理归一化）
             try:
-                raw_result = provider.json_complete(system_prompt, user_content, schema=output_schema)
-                # 填充 note_id 并映射到 ScreenedNote
+                raw_result = provider.json_complete(system_prompt, user_content, schema=None)
+                normalized = _normalize_p2(raw_result)
                 result = ScreenedNote(
                     note_id=note.note_id,
-                    decision=raw_result.get("decision", "review"),
-                    ad_confidence=raw_result.get("ad_confidence", 0.0),
-                    is_ad=raw_result.get("is_ad", False),
-                    content_type=raw_result.get("content_type", "其他"),
-                    value_score=raw_result.get("value_score", 3),
-                    reason=raw_result.get("reason", "无理由"),
+                    **normalized,
                 )
             except Exception as exc:
                 # LLM 失败回退 mock

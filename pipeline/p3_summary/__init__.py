@@ -26,6 +26,50 @@ L1_CATEGORIES = [
     "美妆护肤", "职业求职", "城市资讯", "知识管理",
 ]
 
+
+def _normalize_p3(raw: Dict) -> Dict:
+    """把 LLM 原始输出归一化到合法 SummarizedNote 字段"""
+    l1 = str(raw.get("category_l1", "")).strip()
+    if l1 not in L1_CATEGORIES:
+        l1 = "知识管理"
+
+    l2 = str(raw.get("category_l2", "综合")).strip() or "综合"
+
+    tags = raw.get("tags", [])
+    if not isinstance(tags, list):
+        tags = [str(tags)] if tags else ["其他"]
+    tags = [str(t).strip() for t in tags if str(t).strip()][:6]
+    if not tags:
+        tags = ["其他"]
+
+    tldr = str(raw.get("tldr", "")).strip() or "无摘要"
+    if len(tldr) > 80:
+        tldr = tldr[:80] + "…"
+
+    kps = raw.get("key_points", [])
+    if not isinstance(kps, list):
+        kps = [str(kps)] if kps else ["无要点"]
+    kps = [str(k).strip() for k in kps if str(k).strip()]
+    if not kps:
+        kps = ["无要点"]
+
+    actionable = str(raw.get("actionable", "")).strip() or "无建议"
+    qflags = raw.get("quality_flags", [])
+    if not isinstance(qflags, list):
+        qflags = []
+    qflags = [str(f).strip() for f in qflags if str(f).strip()]
+
+    return {
+        "category_l1": l1,
+        "category_l2": l2,
+        "tags": tags,
+        "tldr": tldr,
+        "key_points": kps,
+        "actionable": actionable,
+        "content_type": "图文",
+        "quality_flags": qflags,
+    }
+
 L1_L2_RULES: Dict[str, List[re.Pattern]] = {
     "职业求职": [re.compile(r"简历|面试|求职|offer|AI PM|PM"), re.compile(r"题库|面经")],
     "技能学习": [re.compile(r"Python|pandas|数据分析|代码|教程|技巧|编程")],
@@ -201,24 +245,17 @@ def run(task_id: str,
                 quality_flags=qflags,
             )
         else:
-            # Phase 3 真实 LLM 调用
+            # Phase 3 真实 LLM 调用（不使用 schema 校验，用后处理归一化）
             user_content = f"笔记标题：{note.title}\n笔记内容：{note.content}\n元数据：{note.metadata}" + \
                            f"\n筛选决策：{s.decision}，置信度：{s.ad_confidence}，理由：{s.reason}"
             try:
-                raw_result = provider.json_complete(system_prompt, user_content, schema=output_schema)
-                # 填充 note_id / url / content_type 并映射到 SummarizedNote
+                raw_result = provider.json_complete(system_prompt, user_content, schema=None)
+                normalized = _normalize_p3(raw_result)
                 result = SummarizedNote(
                     note_id=note.note_id,
                     title=note.title,
                     url=note.url,
-                    category_l1=raw_result.get("category_l1", "知识管理"),
-                    category_l2=raw_result.get("category_l2", "综合"),
-                    tags=raw_result.get("tags", ["其他"]),
-                    tldr=raw_result.get("tldr", "无摘要"),
-                    key_points=raw_result.get("key_points", ["无要点"]),
-                    actionable=raw_result.get("actionable", "无建议"),
-                    content_type="图文",  # 多模态由上层控制
-                    quality_flags=raw_result.get("quality_flags", []),
+                    **normalized,
                 )
             except Exception as exc:
                 # LLM 失败回退 mock
