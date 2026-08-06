@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾遗 · 收藏激活助手</title>
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --bg-soft: #FAFAF8;
+    --text: #1A1A1A;
+    --text-2: #66665E;
+    --text-3: #9B9B92;
+    --border: #E8E8E3;
+    --border-2: #D4D4CC;
+    --accent: #1D9E75;
+    --accent-soft: #E1F5EE;
+    --tag-bg: #F1EFE8;
+    --radius: 10px;
+    --font: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== 顶栏 ===== */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 960px; margin: 0 auto;
+    display: flex; align-items: center;
+    padding: 14px 24px; gap: 28px;
+  }
+  .logo {
+    font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .nav { display: flex; gap: 20px; }
+  .nav a {
+    color: var(--text-2); text-decoration: none; font-size: 14px;
+    padding: 4px 2px; border-bottom: 1.5px solid transparent; transition: color .15s;
+  }
+  .nav a.active, .nav a:hover { color: var(--text); border-bottom-color: var(--accent); }
+
+  /* ===== 主内容 ===== */
+  .main { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  .hero { margin-bottom: 40px; }
+  .hero h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .hero p { color: var(--text-2); font-size: 15px; }
+
+  /* ===== 分类筛选 ===== */
+  .filters { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 14px; border-radius: 999px; font-size: 13px;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    color: var(--text-2); cursor: pointer; transition: all .15s;
+  }
+  .chip:hover { border-color: var(--border-2); color: var(--text); }
+  .chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+
+  /* ===== 知识卡片 ===== */
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .card:hover { border-color: var(--border-2); box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+  .card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.45; }
+  .card-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .pill {
+    font-size: 12px; color: var(--text-2);
+    background: var(--tag-bg); border-radius: 5px; padding: 2px 8px;
+  }
+  .pill.cat { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .card-tldr { font-size: 14px; color: var(--text-2); margin-bottom: 14px; }
+  .card-points { display: none; }
+  .card-points.open { display: block; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+  .card-points li { font-size: 14px; color: var(--text); margin: 6px 0 6px 18px; }
+  .card-foot { display: flex; align-items: center; gap: 12px; margin-top: 14px; font-size: 12.5px; color: var(--text-3); }
+  .card-foot .expand { margin-left: auto; color: var(--text-2); cursor: pointer; }
+  .card-foot .expand:hover { color: var(--accent); }
+
+  /* ===== 空态 ===== */
+  .empty { text-align: center; padding: 80px 0; color: var(--text-3); }
+  .empty .big { font-size: 40px; margin-bottom: 12px; opacity: 0.6; }
+
+  /* ===== 统计条 ===== */
+  .stats { display: flex; gap: 32px; margin-bottom: 40px; padding: 20px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .stat b { display: block; font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+  .stat span { font-size: 13px; color: var(--text-3); }
+
+  /* ===== 导入区（L2）===== */
+  .import-section { margin-top: 64px; }
+  .import-box {
+    border: 1.5px dashed var(--border-2);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    transition: border-color .15s;
+  }
+  .import-box:hover { border-color: var(--accent); }
+  .import-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .import-box p { color: var(--text-2); font-size: 13.5px; margin-bottom: 18px; }
+  .import-box input {
+    width: 100%; max-width: 520px;
+    padding: 10px 14px; border: 1px solid var(--border-2); border-radius: 8px;
+    font-size: 14px; font-family: var(--font); outline: none;
+    transition: border-color .15s;
+  }
+  .import-box input:focus { border-color: var(--accent); }
+  .btn {
+    display: inline-block; margin-top: 14px;
+    padding: 9px 24px; border-radius: 8px; border: none;
+    background: var(--text); color: #fff; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: opacity .15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .import-result { margin-top: 20px; text-align: left; font-size: 14px; color: var(--text-2); display: none; }
+  .import-result.show { display: block; }
+
+  footer { max-width: 960px; margin: 0 auto; padding: 40px 24px 48px; border-top: 1px solid var(--border); color: var(--text-3); font-size: 12.5px; display: flex; justify-content: space-between; }
+
+  @media (max-width: 640px) {
+    .topbar-inner { padding: 12px 16px; gap: 16px; }
+    .main { padding: 32px 16px 64px; }
+    .hero h1 { font-size: 23px; }
+    .card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo"><span class="logo-dot"></span>拾遗</div>
+    <nav class="nav">
+      <a href="#" class="active" data-view="library">知识库</a>
+      <a href="#" data-view="import">导入链接</a>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- 知识库视图 -->
+  <section id="view-library">
+    <div class="hero">
+      <h1>你的知识库</h1>
+      <p>沉睡的收藏，已被整理为可检索的知识卡片。</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="stat-total">0</b><span>条收藏</span></div>
+      <div class="stat"><b id="stat-cats">0</b><span>个分类</span></div>
+      <div class="stat"><b id="stat-tags">0</b><span>个标签</span></div>
+    </div>
+
+    <div class="filters" id="filters"></div>
+    <div id="cards"></div>
+    <div class="empty" id="empty" style="display:none;">
+      <div class="big">· · ·</div>
+      <div>暂无内容，去「导入链接」试试</div>
+    </div>
+  </section>
+
+  <!-- 导入视图 -->
+  <section id="view-import" style="display:none;">
+    <div class="hero">
+      <h1>导入收藏</h1>
+      <p>粘贴小红书链接，自动完成筛选、归纳与入库。</p>
+    </div>
+    <div class="import-section">
+      <div class="import-box">
+        <h3>粘贴链接</h3>
+        <p>支持小红书笔记链接，一次一条，自动限流处理。</p>
+        <input id="linkInput" type="text" placeholder="https://www.xiaohongshu.com/explore/xxx" />
+        <br>
+        <button class="btn" id="importBtn">开始整理</button>
+        <div class="import-result" id="importResult"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>拾遗 ReCollect · 收藏激活助手</span>
+  <span>V1 demo</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
