@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-08-06T15:05:47",
+  "timestamp": "2026-08-06T15:13:01",
   "provider_real": "qwen",
+  "note": "BASE_DIR bug fixed (parents[1] -> parents[2]); P6 scores now correct",
   "mock": {
     "task_id": "eval_mock",
-    "elapsed_s": 25.5,
     "scores": {
       "p2": {
         "total": 10,
@@ -29,19 +29,79 @@
         "pass_rate_ge_08": 0.5
       },
       "p6": {
-        "per_query": [],
+        "per_query": [
+          {
+            "query_id": "q1",
+            "query": "程序员副业有哪些可以快速起步的方向？有哪些坑？",
+            "top_k": 5,
+            "retrieved": [
+              "n005_a4b5c9",
+              "n007_c668c0",
+              "n004_748870",
+              "n009_97e589",
+              "n006_d809a4"
+            ],
+            "gold_ids": [
+              "n005_a4b5c9"
+            ],
+            "hits": 1,
+            "nice": 1,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.3
+          },
+          {
+            "query_id": "q2",
+            "query": "上海落户的完整流程和材料清单是什么？",
+            "top_k": 5,
+            "retrieved": [
+              "n006_d809a4",
+              "n005_a4b5c9",
+              "n009_97e589",
+              "n003_255847",
+              "n007_c668c0"
+            ],
+            "gold_ids": [
+              "n006_d809a4"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          },
+          {
+            "query_id": "q3",
+            "query": "想做数据分析，常用的 Pandas 技巧？",
+            "top_k": 5,
+            "retrieved": [
+              "n007_c668c0",
+              "n009_97e589",
+              "n005_a4b5c9",
+              "n004_748870",
+              "n008_acc010"
+            ],
+            "gold_ids": [
+              "n007_c668c0"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          }
+        ],
         "summary": {
-          "queries_evaluated": 0,
-          "avg_precision_at_k": 0.0,
-          "avg_recall_at_k": 0.0,
-          "avg_relevant_rate": 0.0
+          "queries_evaluated": 3,
+          "avg_precision_at_k": 0.2,
+          "avg_recall_at_k": 1.0,
+          "avg_relevant_rate": 0.2333
         }
       }
     }
   },
   "real": {
     "task_id": "eval_real",
-    "elapsed_s": 87.0,
     "scores": {
       "p2": {
         "total": 10,
@@ -65,12 +125,73 @@
         "pass_rate_ge_08": 1.0
       },
       "p6": {
-        "per_query": [],
+        "per_query": [
+          {
+            "query_id": "q1",
+            "query": "程序员副业有哪些可以快速起步的方向？有哪些坑？",
+            "top_k": 5,
+            "retrieved": [
+              "n005_a4b5c9",
+              "n009_97e589",
+              "n001_11fc35",
+              "n007_c668c0",
+              "n003_255847"
+            ],
+            "gold_ids": [
+              "n005_a4b5c9"
+            ],
+            "hits": 1,
+            "nice": 1,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.3
+          },
+          {
+            "query_id": "q2",
+            "query": "上海落户的完整流程和材料清单是什么？",
+            "top_k": 5,
+            "retrieved": [
+              "n006_d809a4",
+              "n003_255847",
+              "n001_11fc35",
+              "n005_a4b5c9",
+              "n009_97e589"
+            ],
+            "gold_ids": [
+              "n006_d809a4"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          },
+          {
+            "query_id": "q3",
+            "query": "想做数据分析，常用的 Pandas 技巧？",
+            "top_k": 5,
+            "retrieved": [
+              "n007_c668c0",
+              "n009_97e589",
+              "n005_a4b5c9",
+              "n008_acc010",
+              "n001_11fc35"
+            ],
+            "gold_ids": [
+              "n007_c668c0"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          }
+        ],
         "summary": {
-          "queries_evaluated": 0,
-          "avg_precision_at_k": 0.0,
-          "avg_recall_at_k": 0.0,
-          "avg_relevant_rate": 0.0
+          "queries_evaluated": 3,
+          "avg_precision_at_k": 0.2,
+          "avg_recall_at_k": 1.0,
+          "avg_relevant_rate": 0.2333
         }
       }
     }

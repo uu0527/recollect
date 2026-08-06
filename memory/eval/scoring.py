@@ -13,7 +13,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parents[2]  # memory/eval/scoring.py → 项目根
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
