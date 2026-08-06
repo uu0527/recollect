@@ -5,9 +5,9 @@ Phase 1: 仅定义路径、常量和阈值，无业务逻辑
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from dotenv import load_dotenv
 
-# ============================================================
+load_dotenv() ============================================================
 # 根路径
 # ============================================================
 BASE_DIR: Path = Path(__file__).resolve().parent
@@ -94,3 +94,46 @@ RAG = {
 # 全链路阶段依赖顺序
 # ============================================================
 STAGE_ORDER = ["p1", "p2", "p3", "p5", "p4", "p6"]
+
+# ============================================================
+# LLM Provider 配置（Phase 3）
+# provider 可选: mock / openai / kimi / deepseek
+# 切换真实模型只需改 provider 字段，api_key 从环境变量读取
+# ============================================================
+MODEL_CONFIG: dict = {
+    # 全局默认
+    "default": "mock",
+    "timeout": 30,
+    "max_retries": 3,
+    "temperature": 0.0,
+
+    # 各阶段 per-stage 覆盖（provider + temperature）
+    "p2": {
+        "provider": os.environ.get("RECOLLECT_P2_PROVIDER", "mock"),
+        "temperature": 0.0,   # 分类任务：确定性输出
+    },
+    "p3": {
+        "provider": os.environ.get("RECOLLECT_P3_PROVIDER", "mock"),
+        "temperature": 0.3,   # 归纳任务：允许少量创造性
+    },
+    "p5": {
+        "provider": os.environ.get("RECOLLECT_P5_PROVIDER", "mock"),
+        "temperature": 0.0,   # 审计任务：确定性输出；实例必须与 P3 隔离
+    },
+    "p6": {
+        "provider": os.environ.get("RECOLLECT_P6_PROVIDER", "mock"),
+        "temperature": 0.3,
+    },
+
+    # 各 provider API key（从环境变量读取，不硬编码）
+    "openai_api_key":   os.environ.get("OPENAI_API_KEY", ""),
+    "kimi_api_key":     os.environ.get("KIMI_API_KEY", ""),
+    "deepseek_api_key": os.environ.get("DEEPSEEK_API_KEY", 
+    "qwen_api_key":     os.environ.get("QWEN_API_KEY", "sk-ff94ea2ed9884d539b258db9efa973ee")
+""),
+
+    # 可选：指定具体 model 名称（不填则用 provider 默认）
+    "openai_model":    os.environ.get("OPENAI_MODEL", ""),
+    "kimi_model":      os.environ.get("KIMI_MODEL", ""),
+    "deepseek_model":  os.environ.get("DEEPSEEK_MODEL", ""),
+}
