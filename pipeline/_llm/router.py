@@ -273,7 +273,7 @@ class ModelRouter:
                 print(f"[MODEL ROUTER] Task type: vision | Selected model: qwen3-vl-plus | Provider: {ROLE_VISION}")
                 client = _build_provider(ROLE_VISION, stage, force_new=force_new)
                 if client.provider_name != "mock":
-                    return TrackedLLMClient(
+                    vision_client = TrackedLLMClient(
                         inner=client,
                         provider=client.provider_name,
                         stage=stage,
@@ -282,6 +282,28 @@ class ModelRouter:
                         level="VISION",
                         route_reason="vision_task",
                         images=images or [],
+                    )
+                    # 构建文本 fallback 目标（DeepSeek/智谱），Vision 失败时自动重试
+                    text_provider, _level, _reason = self.resolve(
+                        stage, task_type=task_type, text=text, force_model=force_model
+                    )
+                    text_client_raw = _build_provider(text_provider, stage, force_new=force_new)
+                    text_client = TrackedLLMClient(
+                        inner=text_client_raw,
+                        provider=text_client_raw.provider_name,
+                        stage=stage,
+                        task_id=task_id,
+                        task_type=task_type,
+                        level=_level,
+                        route_reason=f"vision_fallback_from:{_reason}",
+                    ) if text_client_raw.provider_name != "mock" else text_client_raw
+
+                    return VisionFallbackClient(
+                        vision=vision_client,
+                        text=text_client,
+                        stage=stage,
+                        task_id=task_id,
+                        task_type=task_type,
                     )
                 print("[MODEL ROUTER] WARNING: qwen_vision key 缺失，fallback 到文本模型")
             else:
@@ -379,6 +401,49 @@ class TrackedLLMClient(LLMClient):
             error=error,
             note=f"level={self.level}|route={self.route_reason}",
         )
+
+
+# ----------------------------------------------------------------
+# Vision Fallback：Vision 失败自动重试文本模型（保证 pipeline 不中断）
+# ----------------------------------------------------------------
+class VisionFallbackClient(LLMClient):
+    """
+    包装 vision + text 两个 client：
+    - 优先调用 vision（qwen3-vl-plus）
+    - 若 Vision 抛异常（图片损坏/格式错误/API 失败）→ 自动用 text client 重试
+      （去掉 images，避免文本模型收到图片参数）
+    - 记录 warning 到日志，不中断 pipeline
+    """
+
+    provider_name = "qwen_vision+fallback"
+
+    def __init__(self, vision: LLMClient, text: LLMClient,
+                 stage: str = "", task_id: str = "", task_type: str = ""):
+        self._vision = vision
+        self._text = text
+        self.stage = stage
+        self.task_id = task_id
+        self.task_type = task_type
+        self.model = getattr(vision, "model", "qwen3-vl-plus")
+
+    def complete(self, system: str, user: str, **kw) -> str:
+        try:
+            return self._vision.complete(system, user, **kw)
+        except Exception as exc:
+            print(f"[MODEL ROUTER] WARNING: Vision 调用失败（{type(exc).__name__}: {str(exc)[:100]}），"
+                  f"fallback 到文本模型 {getattr(self._text, 'provider_name', 'text')}")
+            # 去掉 images 参数后重试文本模型
+            kw.pop("images", None)
+            return self._text.complete(system, user, **kw)
+
+    def json_complete(self, system: str, user: str, schema=None, **kw) -> Dict[str, Any]:
+        try:
+            return self._vision.json_complete(system, user, schema=schema, **kw)
+        except Exception as exc:
+            print(f"[MODEL ROUTER] WARNING: Vision 调用失败（{type(exc).__name__}: {str(exc)[:100]}），"
+                  f"fallback 到文本模型 {getattr(self._text, 'provider_name', 'text')}")
+            kw.pop("images", None)
+            return self._text.json_complete(system, user, schema=schema, **kw)
 
 
 # ----------------------------------------------------------------
