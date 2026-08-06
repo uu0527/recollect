@@ -137,19 +137,20 @@ def run(task_id: str, thresholds: Dict | None = None,
     # 选择 provider 和 prompt
     if model_override == "mock":
         # Mock 启发式：保留 Phase 2 行为
-        provider_name = "mock"
-        system_prompt, output_schema = "", {}
+        use_heuristic = True
     else:
-        # 真实 LLM：使用 factory + prompts
+        # 尝试真实 LLM，若 factory 返回 mock 则自动回退启发式
         provider = get_provider("p2")
-        system_prompt, output_schema = get_prompt("p2")
+        use_heuristic = (provider.provider_name == "mock")
+        if not use_heuristic:
+            system_prompt, output_schema = get_prompt("p2")
 
     cnt = {"keep": 0, "review": 0, "drop": 0}
     for note in raw_notes:
         # 构造 user prompt
         user_content = f"笔记标题：{note.title}\n笔记内容：{note.content}\n元数据：{note.metadata}"
 
-        if model_override == "mock":
+        if use_heuristic:
             # Phase 2 启发式逻辑
             ad_conf, vs, reason = _heuristic_screen(note)
             decision, is_ad = _route_decision(ad_conf, vs, th)

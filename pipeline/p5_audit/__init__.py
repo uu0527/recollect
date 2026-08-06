@@ -135,12 +135,13 @@ def run(task_id: str,
     # 选择 provider 和 prompt
     if model_override == "mock":
         # Mock 启发式：保留 Phase 2 行为
-        provider_name = "mock"
-        system_prompt, output_schema = "", {}
+        use_heuristic = True
     else:
-        # 真实 LLM：使用 factory + prompts，且 force_new=True（P5 必须独立实例）
+        # 尝试真实 LLM，若 factory 返回 mock 则自动回退启发式
         provider = get_provider("p5", force_new=True)
-        system_prompt, output_schema = get_prompt("p5")
+        use_heuristic = (provider.provider_name == "mock")
+        if not use_heuristic:
+            system_prompt, output_schema = get_prompt("p5")
 
     results: List[AuditResult] = []
     for s in sampled:
@@ -148,7 +149,7 @@ def run(task_id: str,
         if note is None:
             continue
 
-        if model_override == "mock":
+        if use_heuristic:
             # Phase 2 启发式逻辑
             fid = _fidelity(note, s)
             cov = _coverage(note, s)

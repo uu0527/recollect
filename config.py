@@ -5,9 +5,13 @@ Phase 1: 仅定义路径、常量和阈值，无业务逻辑
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-load_dotenv() ============================================================
+load_dotenv()
+
+# ============================================================
 # 根路径
 # ============================================================
 BASE_DIR: Path = Path(__file__).resolve().parent
@@ -128,9 +132,7 @@ MODEL_CONFIG: dict = {
     # 各 provider API key（从环境变量读取，不硬编码）
     "openai_api_key":   os.environ.get("OPENAI_API_KEY", ""),
     "kimi_api_key":     os.environ.get("KIMI_API_KEY", ""),
-    "deepseek_api_key": os.environ.get("DEEPSEEK_API_KEY", 
-    "qwen_api_key":     os.environ.get("QWEN_API_KEY", "sk-ff94ea2ed9884d539b258db9efa973ee")
-""),
+    "deepseek_api_key": os.environ.get("DEEPSEEK_API_KEY", ""),
 
     # 可选：指定具体 model 名称（不填则用 provider 默认）
     "openai_model":    os.environ.get("OPENAI_MODEL", ""),
