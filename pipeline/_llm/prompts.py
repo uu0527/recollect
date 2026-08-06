@@ -49,6 +49,57 @@ _P2_PROMPTS: Dict[str, PromptPair] = {
             },
         },
     ),
+    "v2": (
+        # system
+        """\
+你是小红书收藏夹内容筛选器。对每个笔记必须给出三态决策：keep / review / drop。
+
+【决策定义】
+- keep：高价值知识内容，值得直接入库。标准：有结构化信息、可复用经验、步骤/清单/数据/代码/真实案例。
+- drop：广告/软广/带货/低质内容。标准：含"私信我""链接""优惠券""推广码""限时""必入""闭眼入""备注"等营销词，或明确标注赞助/广告。
+- review：灰区。标准：信息密度低、纯情绪、打卡、提问、个人碎碎念，或价值与广告特征都不明显。
+
+【判定顺序】
+1. 先看是否广告/软广：是 → drop（ad_confidence≥0.85）。
+2. 再看是否高价值干货：是 → keep（ad_confidence<0.3 且 value_score≥4）。
+3. 其余 → review。
+
+【字段说明】
+- is_ad: 是否为广告（ad_confidence≥0.7）。
+- ad_confidence: 0.0~1.0，广告置信度。
+- content_type: "攻略""测评""教程""资讯""情绪""其他"。
+- value_score: 1~5，信息价值评分（5=极高价值，1=无价值）。
+- decision: "keep"/"review"/"drop"，必须三选一，不能含糊。
+- reason: 一句话解释决策依据。
+
+【示例】
+标题：2026程序员副业指南：从0到月入过万（踩坑经验+全步骤）
+内容：...详细步骤、踩坑经验、真实案例...
+输出：{"is_ad": false, "ad_confidence": 0.1, "content_type": "攻略", "value_score": 5, "decision": "keep", "reason": "高价值副业攻略，含步骤、踩坑与真实案例"}
+
+标题：月薪3k买出3w效果这件百搭神器闭眼入 私信我链接
+内容：限时5折，点击链接抢购，备注暗号再减20
+输出：{"is_ad": true, "ad_confidence": 0.95, "content_type": "其他", "value_score": 1, "decision": "drop", "reason": "带货软广，含私信链接与限时营销词"}
+
+标题：今天去XX咖啡打卡了 环境还不错
+内容：周末人好多，拍了几张照，咖啡一般
+输出：{"is_ad": false, "ad_confidence": 0.05, "content_type": "情绪", "value_score": 2, "decision": "review", "reason": "打卡类低信息密度内容"}
+
+严格输出 JSON，不输出任何额外文字。""",
+        # output schema（与 v1 相同）
+        {
+            "type": "object",
+            "required": ["is_ad", "ad_confidence", "content_type", "value_score", "decision", "reason"],
+            "properties": {
+                "is_ad":          {"type": "boolean"},
+                "ad_confidence":  {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                "content_type":   {"type": "string", "enum": ["攻略", "测评", "教程", "资讯", "情绪", "其他"]},
+                "value_score":    {"type": "integer", "minimum": 1, "maximum": 5},
+                "decision":       {"type": "string", "enum": ["keep", "review", "drop"]},
+                "reason":         {"type": "string"},
+            },
+        },
+    ),
 }
 
 # ================================================================
@@ -153,7 +204,7 @@ _REGISTRY: Dict[str, Dict[str, PromptPair]] = {
 }
 
 _LATEST: Dict[str, str] = {
-    "p2": "v1",
+    "p2": "v2",
     "p3": "v1",
     "p5": "v1",
     "p6": "v1",

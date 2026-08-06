@@ -1,0 +1,204 @@
+{
+  "timestamp": "2026-08-06T15:22:45",
+  "provider_real": "qwen",
+  "mock": {
+    "task_id": "eval_v2_mock",
+    "elapsed_s": 28.8,
+    "scores": {
+      "p2": {
+        "total": 10,
+        "total_ad_gold": 2,
+        "ad_recall": 1.0,
+        "miss_drop_rate_non_ad": 0.0,
+        "review_rate": 0.3,
+        "decision_distribution": {
+          "drop": 2,
+          "review": 3,
+          "keep": 5
+        }
+      },
+      "p3": {
+        "total_summary": 8,
+        "audit_samples": 4,
+        "audit_ratio": 0.5,
+        "avg_audit_score": 0.7995,
+        "avg_fidelity": 1.0,
+        "avg_coverage": 0.775,
+        "avg_category": 0.5125,
+        "pass_rate_ge_06": 0.75,
+        "pass_rate_ge_08": 0.5
+      },
+      "p6": {
+        "per_query": [
+          {
+            "query_id": "q1",
+            "query": "程序员副业有哪些可以快速起步的方向？有哪些坑？",
+            "top_k": 5,
+            "retrieved": [
+              "n005_a4b5c9",
+              "n007_c668c0",
+              "n004_748870",
+              "n009_97e589",
+              "n006_d809a4"
+            ],
+            "gold_ids": [
+              "n005_a4b5c9"
+            ],
+            "hits": 1,
+            "nice": 1,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.3
+          },
+          {
+            "query_id": "q2",
+            "query": "上海落户的完整流程和材料清单是什么？",
+            "top_k": 5,
+            "retrieved": [
+              "n006_d809a4",
+              "n005_a4b5c9",
+              "n009_97e589",
+              "n003_255847",
+              "n007_c668c0"
+            ],
+            "gold_ids": [
+              "n006_d809a4"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          },
+          {
+            "query_id": "q3",
+            "query": "想做数据分析，常用的 Pandas 技巧？",
+            "top_k": 5,
+            "retrieved": [
+              "n007_c668c0",
+              "n009_97e589",
+              "n005_a4b5c9",
+              "n004_748870",
+              "n008_acc010"
+            ],
+            "gold_ids": [
+              "n007_c668c0"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          }
+        ],
+        "summary": {
+          "queries_evaluated": 3,
+          "avg_precision_at_k": 0.2,
+          "avg_recall_at_k": 1.0,
+          "avg_relevant_rate": 0.2333
+        }
+      }
+    }
+  },
+  "real": {
+    "task_id": "eval_v2_real",
+    "elapsed_s": 80.1,
+    "scores": {
+      "p2": {
+        "total": 10,
+        "total_ad_gold": 2,
+        "ad_recall": 1.0,
+        "miss_drop_rate_non_ad": 0.0,
+        "review_rate": 0.3,
+        "decision_distribution": {
+          "drop": 2,
+          "review": 3,
+          "keep": 5
+        }
+      },
+      "p3": {
+        "total_summary": 8,
+        "audit_samples": 4,
+        "audit_ratio": 0.5,
+        "avg_audit_score": 0.9862,
+        "avg_fidelity": 0.9875,
+        "avg_coverage": 0.975,
+        "avg_category": 1.0,
+        "pass_rate_ge_06": 1.0,
+        "pass_rate_ge_08": 1.0
+      },
+      "p6": {
+        "per_query": [
+          {
+            "query_id": "q1",
+            "query": "程序员副业有哪些可以快速起步的方向？有哪些坑？",
+            "top_k": 5,
+            "retrieved": [
+              "n005_a4b5c9",
+              "n009_97e589",
+              "n007_c668c0",
+              "n003_255847",
+              "n004_748870"
+            ],
+            "gold_ids": [
+              "n005_a4b5c9"
+            ],
+            "hits": 1,
+            "nice": 1,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.3
+          },
+          {
+            "query_id": "q2",
+            "query": "上海落户的完整流程和材料清单是什么？",
+            "top_k": 5,
+            "retrieved": [
+              "n006_d809a4",
+              "n003_255847",
+              "n009_97e589",
+              "n005_a4b5c9",
+              "n007_c668c0"
+            ],
+            "gold_ids": [
+              "n006_d809a4"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          },
+          {
+            "query_id": "q3",
+            "query": "想做数据分析，常用的 Pandas 技巧？",
+            "top_k": 5,
+            "retrieved": [
+              "n007_c668c0",
+              "n009_97e589",
+              "n005_a4b5c9",
+              "n008_acc010",
+              "n004_748870"
+            ],
+            "gold_ids": [
+              "n007_c668c0"
+            ],
+            "hits": 1,
+            "nice": 0,
+            "precision@k": 0.2,
+            "recall@k": 1.0,
+            "relevant_rate": 0.2
+          }
+        ],
+        "summary": {
+          "queries_evaluated": 3,
+          "avg_precision_at_k": 0.2,
+          "avg_recall_at_k": 1.0,
+          "avg_relevant_rate": 0.2333
+        }
+      }
+    }
+  },
+  "errors_mock": [],
+  "errors_real": []
+}
