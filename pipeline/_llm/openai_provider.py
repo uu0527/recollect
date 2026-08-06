@@ -16,20 +16,22 @@ from typing import Any, Dict, List, Optional
 
 from pipeline._llm.base import LLMClient, extract_json, validate_schema
 
-# 三家 base_url
+# 各 provider base_url（全部兼容 openai SDK）
 _BASE_URLS: Dict[str, str] = {
     "openai": "https://api.openai.com/v1",
     "kimi": "https://api.moonshot.cn/v1",
     "deepseek": "https://api.deepseek.com/v1",
-    "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "hunyuan": "https://api.hunyuan.cloud.tencent.com/v1",
 }
 
-# 三家默认 model
+# 各 provider 默认 model
 _DEFAULT_MODELS: Dict[str, str] = {
     "openai": "gpt-4o-mini",
     "kimi": "moonshot-v1-8k",
     "deepseek": "deepseek-chat",
-    "qwen": "qwen-plus"
+    "qwen": "qwen-plus",
+    "hunyuan": "hunyuan-turbo",
 }
 
 

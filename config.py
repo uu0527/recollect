@@ -21,6 +21,7 @@ MEMORY_DIR: Path = BASE_DIR / "memory"
 EVAL_DIR: Path = MEMORY_DIR / "eval"
 FRONTEND_DIR: Path = BASE_DIR / "frontend"
 SCRIPTS_DIR: Path = BASE_DIR / "scripts"
+LOG_DIR: Path = BASE_DIR / "logs"
 
 # ============================================================
 # 数据阶段目录（按 P1~P6 契约）
@@ -134,10 +135,38 @@ MODEL_CONFIG: dict = {
     "kimi_api_key":     os.environ.get("KIMI_API_KEY", ""),
     "deepseek_api_key": os.environ.get("DEEPSEEK_API_KEY", ""),
     "qwen_api_key":     os.environ.get("QWEN_API_KEY", ""),
+    "hunyuan_api_key":  os.environ.get("HUNYUAN_API_KEY", ""),
 
     # 可选：指定具体 model 名称（不填则用 provider 默认）
     "openai_model":    os.environ.get("OPENAI_MODEL", ""),
     "kimi_model":      os.environ.get("KIMI_MODEL", ""),
     "deepseek_model":  os.environ.get("DEEPSEEK_MODEL", ""),
     "qwen_model":      os.environ.get("QWEN_MODEL", ""),
+    "hunyuan_model":   os.environ.get("HUNYUAN_MODEL", ""),
+}
+
+# ============================================================
+# Model Router 配置（Phase 3.5 - 智能模型路由）
+# 角色定义：
+#   ROLE_QUALITY = deepseek（高质量推理，仅复杂任务使用）
+#   ROLE_COST    = hunyuan（成本优化，承担大量低复杂度任务）
+# 优先级：force_model > 复杂度分级 > DeepSeek 限额 > 时间调度
+# ============================================================
+MODEL_ROUTER_CONFIG: dict = {
+    # 时间调度：只决定"默认模型"，不覆盖复杂度判断
+    # 复杂任务（LEVEL_3）任何时候都可用 DeepSeek
+    "schedule_enabled": os.environ.get("RECOLLECT_ROUTER_SCHEDULE", "true").lower() == "true",
+    "schedule": [
+        {"start": "00:00", "end": "08:00", "default_model": "hunyuan"},
+        {"start": "08:00", "end": "18:00", "default_model": "deepseek"},
+        {"start": "18:00", "end": "24:00", "default_model": "hunyuan"},
+    ],
+    # 每日限额（也可用环境变量 DEEPSEEK_DAILY_LIMIT 覆盖，单位：token）
+    "daily_limits": {
+        "deepseek": int(os.environ.get("DEEPSEEK_DAILY_LIMIT", "500000")),
+    },
+    # 任务类型 → 等级（供 TaskClassifier 参考）
+    "level_1_tasks": ["classify", "tagging", "extract", "format", "screen"],
+    "level_2_tasks": ["summary", "dedup"],
+    "level_3_tasks": ["audit", "code", "architecture", "analysis", "deep_reasoning"],
 }

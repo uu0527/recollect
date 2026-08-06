@@ -206,9 +206,56 @@ python memory/eval/scoring.py demo01
 
 ## 8. 下一步（Phase 3）
 
-1. P2/P3/P5 接入真实 LLM API（openai / kimi / deepseek），Mock 模式保留 `provider="mock"`
+1. P2/P3/P5 接入真实 LLM API（openai / kimi / deepseek / qwen / hunyuan），Mock 模式保留 `provider="mock"`
 2. P1 接入浏览器插件 MV3 + 手动链接导入合规兜底通道
 3. P4 接入真实飞书多维表格 + digest 文档
 4. P6 升级为真实 sentence-transformers + chromadb（Mock 接口不变，替换 `_mock_embed` 和 `MockVectorStore` 即可）
 5. P6 反例库扩充到 20-30 个真实问题
 6. 运行日志记录「北极星指标」：digest 打开率 / 归纳回访率 / 检索真实使用次数 / 落灰救回率
+
+---
+
+## 9. Model Router（智能模型路由）
+
+### 9.1 设计原则
+- **默认低成本**：hunyuan 承担大量低复杂度任务（分类/标签/摘要）
+- **高价值才用 DeepSeek**：复杂推理/技术分析/代码/多步骤任务
+- **P5 模型隔离**：审计与 P3 用不同模型，防自我确认偏差
+- **兜底降级**：key 缺失/超限/失败时自动降级到下一个可用 provider
+
+### 9.2 路由优先级
+```
+force_model（显式指定）
+  > P5 模型隔离（与 P3 不同模型）
+  > 任务复杂度分级（TaskClassifier: LEVEL_1/2/3）
+  > DeepSeek 每日限额（DEEPSEEK_DAILY_LIMIT）
+  > 时间调度（MODEL_ROUTER_CONFIG.schedule，只改默认值）
+  > key 有效性校验（无效 key 自动跳过）
+```
+
+### 9.3 模型角色
+| 角色 | provider | 适用 |
+|---|---|---|
+| 成本模型 | hunyuan | 分类/标签/简单摘要/信息抽取 |
+| 高质量模型 | deepseek | 复杂推理/技术分析/代码/多步骤 |
+| 兜底模型 | qwen | key 缺失时的自动降级目标 |
+
+### 9.4 配置
+```bash
+# .env
+HUNYUAN_API_KEY=xxx
+DEEPSEEK_API_KEY=xxx
+DEEPSEEK_DAILY_LIMIT=500000   # 每日总 token 限额
+RECOLLECT_ROUTER_SCHEDULE=true  # 是否启用时间调度
+```
+
+### 9.5 使用
+调用方只需把 `get_provider("p3")` 换成 `get_stage_provider("p3", task_id=tid, task_type="summary", text=content)`。返回仍是 LLMClient 接口，Pipeline/Mock/Eval 零改动。
+
+### 9.6 调用日志
+每次调用记录到 `logs/model_usage.json`：
+```
+{timestamp, task_id, stage, model, provider, task_type,
+ input_tokens, output_tokens, estimated_cost_usd, success, error}
+```
+成本分析：`python -c "from pipeline._llm.usage import get_cost_summary; print(get_cost_summary())"`

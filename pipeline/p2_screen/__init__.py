@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple
 
 from schemas import RawNote, ScreenedNote, load_jsonl, dump_jsonl
 from config import path_raw, path_screened, P2_THRESHOLDS
-from pipeline._llm.factory import get_provider
+from pipeline._llm.router import get_stage_provider
 from pipeline._llm.prompts import get_prompt
 
 
@@ -174,13 +174,14 @@ def run(task_id: str, thresholds: Dict | None = None,
     raw_notes: List[RawNote] = load_jsonl(str(path_raw(task_id)), RawNote)
     results: List[ScreenedNote] = []
 
-    # 选择 provider 和 prompt
+    # 选择 provider 和 prompt（Phase 3.5: 走 Model Router，P2 默认混元低成本）
     if model_override == "mock":
         # Mock 启发式：保留 Phase 2 行为
         use_heuristic = True
     else:
-        # 尝试真实 LLM，若 factory 返回 mock 则自动回退启发式
-        provider = get_provider("p2")
+        # 尝试真实 LLM（智能路由），若 factory 返回 mock 则自动回退启发式
+        provider = get_stage_provider("p2", task_id=task_id,
+                                      task_type="screen", text="")
         use_heuristic = (provider.provider_name == "mock")
         if not use_heuristic:
             system_prompt, output_schema = get_prompt("p2")

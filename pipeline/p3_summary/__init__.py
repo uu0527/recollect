@@ -14,7 +14,7 @@ from schemas import (
     load_jsonl, dump_json,
 )
 from config import path_raw, path_screened, path_summary
-from pipeline._llm.factory import get_provider
+from pipeline._llm.router import get_stage_provider
 from pipeline._llm.prompts import get_prompt
 
 
@@ -199,13 +199,14 @@ def run(task_id: str,
     }
     screened: List[ScreenedNote] = load_jsonl(str(path_screened(task_id)), ScreenedNote)
 
-    # 选择 provider 和 prompt
+    # 选择 provider 和 prompt（Phase 3.5: 走 Model Router，按内容复杂度选模型）
     if model_override == "mock":
         # Mock 启发式：保留 Phase 2 行为
         use_heuristic = True
     else:
-        # 尝试真实 LLM，若 factory 返回 mock 则自动回退启发式
-        provider = get_provider("p3")
+        # 尝试真实 LLM（智能路由：简单内容→混元，复杂/技术→DeepSeek）
+        provider = get_stage_provider("p3", task_id=task_id,
+                                      task_type="summary", text="")
         use_heuristic = (provider.provider_name == "mock")
         if not use_heuristic:
             system_prompt, output_schema = get_prompt("p3")
@@ -217,6 +218,13 @@ def run(task_id: str,
         note = raw_map.get(s.note_id)
         if note is None:
             continue
+
+        if not use_heuristic:
+            # 每条 note 独立路由：根据内容复杂度决定是否升级 DeepSeek
+            provider = get_stage_provider("p3", task_id=task_id,
+                                          task_type="summary",
+                                          text=note.title + "\n" + note.content)
+            use_heuristic = (provider.provider_name == "mock")
 
         if use_heuristic:
             # Phase 2 启发式逻辑

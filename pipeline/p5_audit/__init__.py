@@ -19,7 +19,7 @@ from schemas import (
     load_jsonl, load_json, dump_jsonl,
 )
 from config import path_raw, path_summary, path_audit
-from pipeline._llm.factory import get_provider
+from pipeline._llm.router import get_stage_provider
 from pipeline._llm.prompts import get_prompt
 
 
@@ -155,13 +155,14 @@ def run(task_id: str,
     rnd = random.Random(seed)
     sampled = rnd.sample(sorted_notes, k=min(k, len(sorted_notes)))
 
-    # 选择 provider 和 prompt
+    # 选择 provider 和 prompt（Phase 3.5: 走 Model Router，自动与 P3 模型隔离）
     if model_override == "mock":
         # Mock 启发式：保留 Phase 2 行为
         use_heuristic = True
     else:
-        # 尝试真实 LLM，若 factory 返回 mock 则自动回退启发式
-        provider = get_provider("p5", force_new=True)
+        # 尝试真实 LLM（智能路由：P5 自动选择与 P3 不同的模型，防自评）
+        provider = get_stage_provider("p5", task_id=task_id,
+                                      task_type="audit", text="", force_new=True)
         use_heuristic = (provider.provider_name == "mock")
         if not use_heuristic:
             system_prompt, output_schema = get_prompt("p5")

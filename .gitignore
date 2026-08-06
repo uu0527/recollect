@@ -62,3 +62,6 @@ data/06_memory/chroma_index/
 memory/eval/report_*.json
 memory/eval/error_cases_*.jsonl
 memory/eval/gold_dataset_*.json
+
+# 模型调用日志（运行时生成）
+logs/
