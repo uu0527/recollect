@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body { width: 300px; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; padding: 12px; margin: 0; }
+    h1 { font-size: 15px; margin: 0 0 4px; }
+    .sub { font-size: 12px; color: #888; margin-bottom: 12px; }
+    .btn { width: 100%; padding: 8px 0; margin: 4px 0; border: none; border-radius: 6px;
+           background: #378ADD; color: #fff; font-size: 13px; cursor: pointer; }
+    .btn:hover { background: #185FA5; }
+    .btn.secondary { background: #eee; color: #333; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .status { font-size: 12px; margin-top: 8px; min-height: 16px; color: #333; }
+    .status.ok { color: #1D9E75; }
+    .status.err { color: #E24B4A; }
+    input { width: calc(100% - 16px); padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 12px; margin: 4px 0; }
+    label { font-size: 12px; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>ReCollect 拾遗</h1>
+  <div class="sub">收藏激活助手 · 本地采集</div>
+
+  <label>任务 ID（文件名前缀）</label>
+  <input id="taskId" type="text" value="xhs_collect" placeholder="如 xhs_20260806" />
+
+  <label style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+    <input id="autoScroll" type="checkbox" checked style="width:auto;margin:0;" /> 自动滚动加载更多
+  </label>
+
+  <button id="scanBtn" class="btn">1. 扫描收藏列表</button>
+  <button id="exportBtn" class="btn secondary" disabled>2. 导出 JSONL</button>
+
+  <div id="status" class="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

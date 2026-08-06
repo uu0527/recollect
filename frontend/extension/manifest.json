@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "ReCollect 拾遗 - 收藏激活助手",
+  "version": "0.1.0",
+  "description": "读取小红书收藏列表，导出为本地 JSONL 供 ReCollect pipeline 处理。仅本地处理，不上传任何数据。",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.xiaohongshu.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ReCollect 拾遗"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.xiaohongshu.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -77,14 +77,21 @@ P2_THRESHOLDS = {
 
 # ============================================================
 # P4 飞书配置（默认使用 mock adapter，真实环境配环境变量）
+# use_mock 自动判断：4 项凭据齐全 → 真实飞书；否则 mock
 # ============================================================
+_FEISHU_APP_ID = os.environ.get("FEISHU_APP_ID", "")
+_FEISHU_APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
+_FEISHU_BITABLE_TOKEN = os.environ.get("FEISHU_BITABLE_TOKEN", "")
+_FEISHU_BITABLE_TABLE_ID = os.environ.get("FEISHU_BITABLE_TABLE_ID", "")
+
 FEISHU = {
-    "use_mock": True,
+    "use_mock": not all([_FEISHU_APP_ID, _FEISHU_APP_SECRET,
+                         _FEISHU_BITABLE_TOKEN, _FEISHU_BITABLE_TABLE_ID]),
     "mock_output": WRITE_DIR / "mock_feishu_bitable.jsonl",
-    "app_id": os.environ.get("FEISHU_APP_ID", ""),
-    "app_secret": os.environ.get("FEISHU_APP_SECRET", ""),
-    "bitable_app_token": os.environ.get("FEISHU_BITABLE_TOKEN", ""),
-    "bitable_table_id": os.environ.get("FEISHU_BITABLE_TABLE_ID", ""),
+    "app_id": _FEISHU_APP_ID,
+    "app_secret": _FEISHU_APP_SECRET,
+    "bitable_app_token": _FEISHU_BITABLE_TOKEN,
+    "bitable_table_id": _FEISHU_BITABLE_TABLE_ID,
 }
 
 # ============================================================

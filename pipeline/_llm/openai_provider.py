@@ -23,6 +23,7 @@ _BASE_URLS: Dict[str, str] = {
     "deepseek": "https://api.deepseek.com/v1",
     "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "hunyuan": "https://api.hunyuan.cloud.tencent.com/v1",
+    "zhipu": "https://open.bigmodel.cn/api/paas/v4",
 }
 
 # 各 provider 默认 model
@@ -32,6 +33,7 @@ _DEFAULT_MODELS: Dict[str, str] = {
     "deepseek": "deepseek-chat",
     "qwen": "qwen-plus",
     "hunyuan": "hunyuan-turbo",
+    "zhipu": "glm-4-flash",
 }
 
 

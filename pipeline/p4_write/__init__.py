@@ -187,6 +187,64 @@ class FeishuBitable:
 
 
 # ============================================================
+# Digest 文档生成（周报 / 汇总展示层）
+# ============================================================
+def generate_digest(task_id: str, written_notes: List[tuple[SummarizedNote, Optional[AuditResult]]],
+                    digest_path: Optional[Path] = None) -> Path:
+    """
+    生成 digest Markdown：汇总本周入库的知识卡片。
+    输出：data/04_write/{task_id}_digest.md
+    用途：飞书 Wiki 展示层 / 周报 / demo 演示
+    """
+    if digest_path is None:
+        digest_path = WRITE_DIR / f"{task_id}_digest.md"
+
+    now = datetime.now()
+    lines = [
+        f"# ReCollect 知识周报 · {now.strftime('%Y-%m-%d')}",
+        "",
+        f"> 本次入库 **{len(written_notes)}** 条收藏，已自动整理为可检索知识卡片。",
+        "",
+        "---",
+        "",
+    ]
+
+    # 按一级分类分组
+    by_cat: Dict[str, List] = {}
+    for s, aud in written_notes:
+        by_cat.setdefault(s.category_l1, []).append((s, aud))
+
+    for l1 in sorted(by_cat.keys()):
+        items = by_cat[l1]
+        lines.append(f"## {l1}（{len(items)} 条）")
+        lines.append("")
+        for s, aud in items:
+            score = f" ｜审计分 {aud.audit_score:.2f}" if aud else ""
+            lines.append(f"### {s.title}")
+            lines.append("")
+            lines.append(f"- 链接：{s.url}")
+            lines.append(f"- 分类：{s.category_l1} / {s.category_l2}")
+            lines.append(f"- 标签：{', '.join(s.tags)}{score}")
+            lines.append("")
+            lines.append(f"> **TLDR**：{s.tldr}")
+            lines.append("")
+            lines.append("要点：")
+            for kp in s.key_points:
+                lines.append(f"- {kp}")
+            lines.append("")
+            if s.actionable:
+                lines.append(f"**可执行建议**：{s.actionable}")
+                lines.append("")
+        lines.append("---")
+        lines.append("")
+
+    lines.append("> 本 digest 由 ReCollect 自动生成，点击链接可回看原文。")
+    digest_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[P4→digest] {digest_path.name} 已生成（{len(written_notes)} 条）")
+    return digest_path
+
+
+# ============================================================
 # 公共入口
 # ============================================================
 def run(task_id: str,
@@ -327,4 +385,14 @@ def run(task_id: str,
     print(f"[P4] task_id={task_id}  写入 target={'mock' if mock else 'feishu'}  "
           f"通过{len(writable)}条  实际写入{wrote}条  去重命中{dedup_cnt}条  失败{fail_cnt}条  "
           f"→ {record_path.name}")
+
+    # === Digest 文档生成（实际写入的笔记汇总）===
+    try:
+        written_notes = [t for t in writable if t[0].note_id in
+                         {r.note_id for r in records if r.write_success and not r.dedup_hit}]
+        if written_notes:
+            generate_digest(task_id, written_notes)
+    except Exception as e:
+        print(f"[P4→digest] digest 生成失败（非致命）: {e!r}")
+
     return record_path
