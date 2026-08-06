@@ -14,9 +14,8 @@
           note_id: n.note_id,
           url: n.url,
           title: n.title || `[ReCollect] ${n.url}`,
-          // 插件只取到列表页摘要，正文内容需后续详情采集；留空标记
-          content: "",
-          images: [],
+          content: n.content || "",
+          images: n.images || (n.cover ? [n.cover] : []),
           metadata: {
             source: "xiaohongshu_extension",
             author: n.author || "",

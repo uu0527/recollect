@@ -46,16 +46,80 @@
       const likesText = likeEl ? likeEl.textContent.trim() : "";
       const likes = parseInt(likesText.replace(/[^\d]/g, ""), 10) || 0;
 
+      // 封面图（可选）
+      const imgEl = a.querySelector("img.cover, img");
+      const cover = imgEl ? imgEl.getAttribute("src") || "" : "";
+
       notes.push({
         note_id: noteId,
         url: href.startsWith("http") ? href : `https://www.xiaohongshu.com${href}`,
         title,
         author,
         likes,
+        cover,
         collected_at: new Date().toISOString(),
       });
     }
     return notes;
+  }
+
+  /**
+   * 从笔记详情页 DOM 提取正文/图片/作者信息。
+   * 小红书笔记详情页典型结构（页面改版时需更新选择器）：
+   *   - 正文: #detail-desc / .desc / .note-content
+   *   - 图片: #sliderContainer img / .swiper-slide img
+   *   - 作者: .author-wrapper .user-name / .info .user-name
+   *   - 标题: #detail-title / .title
+   */
+  function extractDetailFromDOM() {
+    const pick = (selectors) => {
+      for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el && el.textContent.trim()) return el.textContent.trim();
+      }
+      return "";
+    };
+
+    const title = pick(["#detail-title", ".title", ".note-title"]);
+    const content = pick([
+      "#detail-desc",
+      ".desc",
+      ".note-content",
+      "#detail-content",
+      ".note-text",
+    ]);
+    const author = pick([
+      ".author-wrapper .user-name",
+      ".info .user-name",
+      ".author .name",
+      ".user-name",
+    ]);
+
+    // 图片：详情页所有大图（swiper / slider / content 内 img）
+    const images = [];
+    const seen = new Set();
+    document.querySelectorAll(
+      "#sliderContainer img, .swiper-slide img, #detail-content img, .note-content img, .carousel img"
+    ).forEach((img) => {
+      const src = img.getAttribute("src") || img.getAttribute("data-src") || "";
+      if (!src || src.startsWith("data:") || seen.has(src)) return;
+      seen.add(src);
+      images.push(src.startsWith("http") ? src : `https:${src}`);
+    });
+
+    // 从 URL 取 note_id（详情页 /explore/{id}）
+    const m = location.pathname.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
+    const noteId = m ? m[2] : "";
+
+    return {
+      note_id: noteId,
+      url: location.href,
+      title,
+      content,
+      images,
+      author,
+      collected_at: new Date().toISOString(),
+    };
   }
 
   /**
@@ -93,6 +157,22 @@
         }
       })();
       return true; // 异步响应
+    }
+
+    // 详情页采集：当前页是笔记详情 → 提取正文/图片/作者
+    if (msg && msg.type === "RECOLLECT_DETAIL") {
+      try {
+        const detail = extractDetailFromDOM();
+        const isDetail = /\/(explore|discovery\/item)\//.test(location.pathname);
+        sendResponse({
+          ok: true,
+          isDetail,
+          detail,
+          message: isDetail ? "" : "当前页面不是笔记详情页，请打开一条笔记后再试",
+        });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
     }
   });
 })();

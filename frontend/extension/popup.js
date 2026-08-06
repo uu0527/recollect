@@ -1,9 +1,10 @@
 // ReCollect 拾遗 - Popup 逻辑
-// 流程：扫描当前页收藏 → 暂存 → 导出 JSONL
+// 流程：扫描当前页收藏 / 采集详情页 → 暂存 → 导出 JSONL
 (() => {
   "use strict";
 
   const scanBtn = document.getElementById("scanBtn");
+  const detailBtn = document.getElementById("detailBtn");
   const exportBtn = document.getElementById("exportBtn");
   const statusEl = document.getElementById("status");
   const taskIdInput = document.getElementById("taskId");
@@ -46,6 +47,40 @@
       setStatus("无法连接页面，请刷新收藏页后重试", "err");
     } finally {
       scanBtn.disabled = false;
+    }
+  });
+
+  // 采集当前笔记详情页（正文/图片/作者）
+  detailBtn.addEventListener("click", async () => {
+    setStatus("采集中...");
+    detailBtn.disabled = true;
+    try {
+      const tab = await getActiveTab();
+      if (!tab || !tab.url || !tab.url.includes("xiaohongshu.com")) {
+        setStatus("请先打开一条小红书笔记", "err");
+        return;
+      }
+      const resp = await chrome.tabs.sendMessage(tab.id, { type: "RECOLLECT_DETAIL" });
+      if (resp && resp.ok && resp.isDetail) {
+        // 与列表去重：同 note_id 用详情覆盖（补齐正文/图片）
+        const idx = collectedNotes.findIndex((n) => n.note_id === resp.detail.note_id);
+        if (idx >= 0) {
+          collectedNotes[idx] = { ...collectedNotes[idx], ...resp.detail };
+          setStatus(`已更新详情：${resp.detail.title || resp.detail.note_id}（正文 ${resp.detail.content.length} 字，${resp.detail.images.length} 图）`, "ok");
+        } else {
+          collectedNotes.push(resp.detail);
+          setStatus(`已采集：${resp.detail.title || resp.detail.note_id}（正文 ${resp.detail.content.length} 字，${resp.detail.images.length} 图）`, "ok");
+        }
+        exportBtn.disabled = collectedNotes.length === 0;
+      } else if (resp && resp.ok) {
+        setStatus(resp.message || "当前页不是详情页", "err");
+      } else {
+        setStatus("采集失败：" + (resp && resp.error), "err");
+      }
+    } catch (e) {
+      setStatus("无法连接页面，请刷新后重试", "err");
+    } finally {
+      detailBtn.disabled = false;
     }
   });
 
