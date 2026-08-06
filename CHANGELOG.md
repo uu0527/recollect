@@ -1,5 +1,46 @@
 # ReCollect Changelog
 
+## 2026-08-06 (Phase 3 - 真实能力接入 + Eval 对比评估)
+
+完成：
+- **LLM Provider 抽象层** `pipeline/_llm/`（base/mock/openai_provider/factory/prompts）
+  - LLMClient 接口（complete / json_complete），降级策略不写死 base
+  - MockLLMClient 通过 schema scaffold 模拟真实行为
+  - OpenAICompatibleClient 单类覆盖 openai/kimi/deepseek/qwen
+  - Prompt 版本化管理（_REGISTRY + _LATEST 指针）
+- **P2/P3/P5 接入真实 LLM**：双模式 provider 切换 + LLM 失败回退 mock + 后处理归一化
+- **P4 飞书接入**：FeishuBitable 封装 lark-oapi（指数退避重试）
+- **P6 真实向量库**：ChromaDB + sentence-transformers（bge-small-zh-v1.5）
+- **Qwen 真实 LLM 联通**：demo02 全链路端到端跑通
+- **P2 prompt v2**：明确三态判据 + 3-shot examples，修复全 review 问题
+- **Mock vs Real 对比评估**：scripts/eval_compare.py + eval_report_v2.md
+
+Git 提交（8 个）：
+- `11da5e2` add qwen llm provider support
+- `5ce4a4a` Phase 3: LLM Provider Layer + Real LLM + Feishu + Chroma
+- `905d05c` fix: p6 chroma query, p5 heuristic fallback, config syntax, qwen warning
+- `1220287` fix: add post-processing normalization for P2/P3/P5 + qwen config
+- `a702be9` add: Mock vs Real LLM comparison eval script + eval results
+- `39fb3c7` fix: scoring.py BASE_DIR path bug (parents[1] -> parents[2])
+- `856e4c1` feat: P2 prompt v2 with explicit three-way criteria + few-shot examples
+- `a102a94` docs: eval report v2 - Mock vs Qwen comparison results
+
+关键指标（10 条 gold 标注集）：
+- P2：Qwen v2 三态决策 0 错误（v1 曾 7 错）
+- P3：Qwen 分类准确率 1.0（Mock 0.513）
+- P5：Qwen 审计分 0.986（偏高，待模型隔离）
+- P6：R@k=100%，top1 全命中 gold（P@k=0.2 小数据集正常）
+
+当前状态：Phase 3 完成 ✅ — 真实 LLM 链路 + 对比评估就绪
+
+下一步：
+1. P5 换独立 provider（审计与生成模型隔离）
+2. P6 扩充语料 + gold query（100+ 条 / 20-30 query）
+3. P1 浏览器插件 MV3
+4. P4 接真实飞书
+
+---
+
 ## 2026-08-05 (Phase 1 - 项目骨架初始化)
 
 完成：

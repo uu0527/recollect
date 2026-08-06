@@ -3,7 +3,7 @@
 > 接手日期：2026-08-05
 > 接手 Agent：WorkBuddy AI（Reviewer 角色）
 > 上一阶段 Owner：Trae（Lead Engineer）
-> 项目阶段：Phase 2 Mock MVP 完成，Phase 3 真实接入待启动
+> 项目阶段：Phase 3 完成（真实 LLM 接入 + Eval 对比评估），V1 demo 收尾中
 
 ---
 
@@ -17,42 +17,49 @@ ReCollect（拾遗）= **收藏激活助手**。
 
 ---
 
-## 2. 当前状态（Phase 2 完成）
+## 2. 当前状态（Phase 3 完成）
 
-✅ 主链路 Mock 跑通，一键 demo 可生成全部阶段产物。
+✅ 主链路真实 LLM 跑通（Qwen），Mock 保留可切换；Mock vs Real 对比评估完成。
 
 | 阶段 | 实现 | 文件 |
 |---|---|---|
 | P1 Collect | Mock 10 条 Demo + URL/文件双通道 | `pipeline/p1_collect/__init__.py` |
-| P2 Screen | 关键词启发式 + 三态路由 | `pipeline/p2_screen/__init__.py` |
-| P3 Summary | L1/L2 分类 + 严格 JSON | `pipeline/p3_summary/__init__.py` |
-| P5 Audit | GSB 三维 + 0.5 抽检（独立） | `pipeline/p5_audit/__init__.py` |
-| P4 Write | Mock Bitable + 去重 + 回读校验 + P6 索引前置 | `pipeline/p4_write/__init__.py` |
-| P6 Memory | MD5 Embedding + JSON 向量库 + 强约束来源 | `pipeline/p6_memory/__init__.py` |
-| Eval | P2/P3/P6 评分 + Gold 10 条 + 反例库 | `memory/eval/scoring.py` |
+| P2 Screen | 真实 LLM + 启发式双模式，prompt v2（0 错误） | `pipeline/p2_screen/__init__.py` |
+| P3 Summary | 真实 LLM 归纳（分类准确率 1.0） | `pipeline/p3_summary/__init__.py` |
+| P5 Audit | 真实 LLM 审计 + 0.5 抽检（独立实例） | `pipeline/p5_audit/__init__.py` |
+| P4 Write | Mock Bitable + FeishuBitable SDK 封装 + 去重 + 回读校验 | `pipeline/p4_write/__init__.py` |
+| P6 Memory | ChromaDB + bge-small-zh 向量库，Mock 回退 | `pipeline/p6_memory/__init__.py` |
+| LLM 层 | 统一接口 + 工厂 + prompt 版本化 | `pipeline/_llm/*` |
+| Eval | P2/P3/P6 评分 + 对比评估脚本 + 报告 | `memory/eval/` + `scripts/eval_compare.py` |
 
 ### 2.1 一键跑通
 
 ```bash
 cd recollect
 
-# 方式 A：CLI Harness（推荐）
+# 全链路（默认 .env provider，当前 qwen）
 python run.py --task_id demo01 --stage all
 
-# 方式 B：兜底脚本（不依赖 click）
-python scripts/demo_runner.py demo01
+# Mock 模式强制走启发式
+python run.py --task_id demo01 --stage p2 --model_override mock
 
-# 跑评测
+# Mock vs Real 对比评估
+python scripts/eval_compare.py --provider qwen --task_id eval
+
+# 跑评测（单 task）
 python memory/eval/scoring.py demo01
 ```
 
-产物落 `data/01_raw ~ 06_memory/` + `memory/eval/`。
+### 2.2 当前指标（Phase 3 实测，10 条 gold）
 
-### 2.2 期望指标（Mock 期基线）
-
-- P2 广告召回率 ≈ 100%，误杀率 ≈ 0%，review 率 ≈ 30%
-- P3 平均审计分 ≥ 0.70
-- P6 平均相关率 ≥ 60%（3 个内置问题）
+| 维度 | Mock | Qwen v2 |
+|---|---|---|
+| P2 决策错误 | 0 | **0** |
+| P2 广告召回 | 100% | 100% |
+| P3 分类准确 | 0.513 | **1.0** |
+| P5 均审计分 | 0.800 | 0.986 |
+| P6 召回率 | 100% | 100% |
+| P6 精度@5 | 20% | 20% |
 
 ---
 
@@ -62,42 +69,47 @@ python memory/eval/scoring.py demo01
 
 1. **执行顺序** `STAGE_ORDER = ["p1","p2","p3","p5","p4","p6"]` — P5 审计先于 P4 写入
 2. **P6 索引前置** — P4 写成功即调 `P6.build_index(incremental=True)`，不查时全量重建
-3. **P5 与 P3 完全隔离** — P5 只读 P1 raw + P3 summary，不复用 P3 启发式
+3. **P5 与 P3 完全隔离** — P5 只读 P1 raw + P3 summary，不复用 P3 启发式；Phase 3 用 `force_new=True` 实例隔离
 4. **RAGResult 强约束** — `retrieved_note_ids` 必填，可追溯
-5. **Mock/真实 1:1 接口** — Phase 3 接入真实服务时只换 provider，调用方零改
+5. **Mock/真实 1:1 接口** — provider 切换即可，调用方零改
 6. **阶段间 100% JSON/JSONL** — 禁止内存态传递
 7. **task_id 幂等** — 重跑 = 覆盖，P4 `note_id` 去重
+8. **LLM 降级策略不进 base** — 各 provider 自行实现（用户 reviewer 意见）
+9. **LLM 输出后处理归一化** — `_normalize_p2/p3/p5` 映射非法值，而非严格 schema 校验
+10. **Prompt 版本化** — 改 prompt 必须新增版本，不允许原地改（保证 eval 可复现）
 
 ---
 
 ## 4. 已知问题（按优先级）
 
+### P0 — 审计模型隔离
+- P3/P5 同为 qwen，P5 自评偏高（0.986）— 应换独立 provider（deepseek/kimi）
+
 ### P0 — 文档一致性
 - `PRD.md §2` 任务 checkbox 仍是 `[ ]`，实际已全部完成 — 需改为 `[x]`
 
-### P1 — 数据隔离
-- `config.FEISHU.mock_output = data/04_write/mock_feishu_bitable.jsonl` 是 **全局文件**，多 task_id 写会混 — 建议改为 `data/04_write/{task_id}_mock_feishu_bitable.jsonl`
+### P1 — P5 区分度
+- 审计分集中在 0.95-1.0，4 条审计 3 条满分 — prompt 调优提高严格度
 
 ### P1 — Eval 覆盖度
-- `memory/eval/scoring.py` 反例库仅覆盖 P2 决策错误，P3/P6 错误无机制记录
-- Gold 集仅 10 条，统计意义弱
+- Gold 集仅 10 条，统计意义弱 — 扩到 100~150 条
+- P6 query 仅 3 个内置问题 — 扩到 20-30 个真实查询
 
-### P1 — P2 启发式盲区
-- 软广 / 真人种草笔记（关键词命中数低）可能漏网
-- 无 ML 模型，纯关键词
+### P1 — P4 真实飞书未接
+- FeishuBitable SDK 已封装，但缺 FEISHU_APP_ID / SECRET / BITABLE_TOKEN
 
-### P2 — P3 L2 推断
-- `p3_summary._classify` 的 `l2_map` 关键词覆盖窄，"AI PM" / "数据" 等 L2 永远落"综合"
+### P1 — P6 回答质量
+- 回答仍用 mock 模板生成，未接真实 LLM
 
-### P2 — P5 抽检
-- `audit_ratio=0.5` + 固定 `seed=20260805` — 生产应改 1.0 或 per-task 切 seed
+### P2 — P6 精度
+- P@k=0.2（小数据集正常），扩语料后自然改善
 
-### P2 — P6 语义
-- `_mock_embed` 基于 MD5 哈希，无真实语义 — 真实接入必须替换
+### P2 — 浏览器插件
+- P1 采集仍是 Mock，浏览器插件 MV3 未开发
 
 ---
 
-## 5. 下一阶段（Phase 3 真实接入）
+## 5. 下一阶段（V1 demo 收尾）
 
 > 完整路线见 [`AI_CONTEXT.md`](./AI_CONTEXT.md) §5
 
@@ -105,18 +117,18 @@ python memory/eval/scoring.py demo01
 
 | 任务 | 说明 |
 |---|---|
-| P2/P3/P5 接真实 LLM | openai / kimi / deepseek 三选一，保留 `provider="mock"` 切换 |
+| P5 换独立 provider | deepseek / kimi，实现审计与生成模型隔离 |
+| P5 prompt v2 | 提高审计严格度，解决区分度不足 |
 | P1 浏览器插件 MV3 | 抓取小红书笔记 → 推本地 API |
-| P1 手动链接兜底 | URL/文件即可，已在 P1 mock 实现 |
-| P4 真实飞书 | 多维表格 + digest 文档 |
+| P4 真实飞书 | 多维表格 + digest 文档（需真实凭据） |
 | Eval Gold 扩到 100~150 | 覆盖广告变体 / 灰区变体 |
 
 ### P1
 
 | 任务 | 说明 |
 |---|---|
-| P6 sentence-transformers + chromadb | 替换 `_mock_embed` / `MockVectorStore`，接口零改 |
-| P6 反例库扩到 20~30 真实 query | 召回/相关率人工评估 |
+| P6 扩充语料 + query | 100+ 条语料 / 20-30 真实 query |
+| P6 回答接真实 LLM | 当前 mock 模板生成 |
 
 ### P2（V1 demo 后）
 
