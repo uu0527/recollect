@@ -1,0 +1,137 @@
+{
+  "timestamp": "2026-08-06T15:05:47",
+  "provider_real": "qwen",
+  "mock": {
+    "task_id": "eval_mock",
+    "elapsed_s": 25.5,
+    "scores": {
+      "p2": {
+        "total": 10,
+        "total_ad_gold": 2,
+        "ad_recall": 1.0,
+        "miss_drop_rate_non_ad": 0.0,
+        "review_rate": 0.3,
+        "decision_distribution": {
+          "drop": 2,
+          "review": 3,
+          "keep": 5
+        }
+      },
+      "p3": {
+        "total_summary": 8,
+        "audit_samples": 4,
+        "audit_ratio": 0.5,
+        "avg_audit_score": 0.7995,
+        "avg_fidelity": 1.0,
+        "avg_coverage": 0.775,
+        "avg_category": 0.5125,
+        "pass_rate_ge_06": 0.75,
+        "pass_rate_ge_08": 0.5
+      },
+      "p6": {
+        "per_query": [],
+        "summary": {
+          "queries_evaluated": 0,
+          "avg_precision_at_k": 0.0,
+          "avg_recall_at_k": 0.0,
+          "avg_relevant_rate": 0.0
+        }
+      }
+    }
+  },
+  "real": {
+    "task_id": "eval_real",
+    "elapsed_s": 87.0,
+    "scores": {
+      "p2": {
+        "total": 10,
+        "total_ad_gold": 2,
+        "ad_recall": 0.0,
+        "miss_drop_rate_non_ad": 0.0,
+        "review_rate": 1.0,
+        "decision_distribution": {
+          "review": 10
+        }
+      },
+      "p3": {
+        "total_summary": 10,
+        "audit_samples": 5,
+        "audit_ratio": 0.5,
+        "avg_audit_score": 1.0,
+        "avg_fidelity": 1.0,
+        "avg_coverage": 1.0,
+        "avg_category": 1.0,
+        "pass_rate_ge_06": 1.0,
+        "pass_rate_ge_08": 1.0
+      },
+      "p6": {
+        "per_query": [],
+        "summary": {
+          "queries_evaluated": 0,
+          "avg_precision_at_k": 0.0,
+          "avg_recall_at_k": 0.0,
+          "avg_relevant_rate": 0.0
+        }
+      }
+    }
+  },
+  "errors_mock": [],
+  "errors_real": [
+    {
+      "type": "P2_decision_mismatch",
+      "note_id": "n000_e1aa3f",
+      "gold": "drop",
+      "pred": "review",
+      "reason": "标题含'限时5折''点击链接抢购'，正文含'下单立减200元''链接就在评论区''前100名下单送同款小样'等典型促销话术，且元数据中is_sponsored为True，明确为品牌赞助内容",
+      "gold_type": "明显广告（面膜促销）"
+    },
+    {
+      "type": "P2_decision_mismatch",
+      "note_id": "n001_11fc35",
+      "gold": "drop",
+      "pred": "review",
+      "reason": "笔记中明确包含'私信我链接'、'粉丝群还有专属优惠券'、'备注我的推广码'、'立减50'等高广告特征用语，且元数据中is_sponsored为True，确认为品牌商赞助内容。",
+      "gold_type": "带货软文（百搭神器+推广码）"
+    },
+    {
+      "type": "P2_decision_mismatch",
+      "note_id": "n005_a4b5c9",
+      "gold": "keep",
+      "pred": "review",
+      "reason": "内容为真实副业经验总结，包含具体步骤（选方向、冷启动、定价、避坑、时间管理）、可复用方法论（如前3单成本价换案例）、数据支撑（踩坑时间线+损失金额），无广告话术或推广链接，符合小红书高价值干货特征。",
+      "gold_type": "副业干货（高价值）"
+    },
+    {
+      "type": "P2_decision_mismatch",
+      "note_id": "n006_d809a4",
+      "gold": "keep",
+      "pred": "review",
+      "reason": "内容为真实落户经验分享，包含详细材料清单、分阶段时间线、常见问题及避坑提醒，信息结构清晰、实用性强，无广告或推广痕迹。",
+      "gold_type": "落户流程（强结构化）"
+    },
+    {
+      "type": "P2_decision_mismatch",
+      "note_id": "n007_c668c0",
+      "gold": "keep",
+      "pred": "review",
+      "reason": "内容为纯技术干货，涵盖10个高频Pandas技巧，每条均含具体用法、适用场景、性能对比（如'比.apply + if快100倍'）及实际应用价值（如'作图必备''金融/时序数据救星'），附可执行代码和示例数据，无广告话术、无推广链接、无赞助声明，符合高价值原创技术分享标准。",
+      "gold_type": "Pandas 教程（代码示例）"
+    },
+    {
+      "type": "P2_decision_mismatch",
+      "note_id": "n008_acc010",
+      "gold": "keep",
+      "pred": "review",
+      "reason": "LLM 判定",
+      "gold_type": "健身增肌计划（饮食+训练）"
+    },
+    {
+      "type": "P2_decision_mismatch",
+      "note_id": "n009_97e589",
+      "gold": "keep",
+      "pred": "review",
+      "reason": "内容提供具体、可操作的AI PM求职干货，包括简历写作细节（数据规模/模型选型/指标提升等）、6道高频面试题及专业级回答要点（含技术术语如RAG、红队、自一致性、灰度策略）、真实大厂面试流程拆解；无广告话术、无推广链接、无诱导私信，全部为结构化经验复盘与方法论输出。",
+      "gold_type": "AI PM 求职面经（题库+写法）"
+    }
+  ]
+}
