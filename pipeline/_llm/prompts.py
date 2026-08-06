@@ -165,6 +165,50 @@ comments：一句话综合点评，指出主要问题（如无问题填"归纳�
             },
         },
     ),
+    "v2": (
+        # system
+        """\
+你是一个严格的内容质量审计员。你的职责是**挑毛病**，不是给表扬。逐条对照原始笔记核对摘要，任何存疑都必须扣分。
+你只能看到原始笔记和摘要，不能依赖生成摘要的 AI 的判断。
+
+【三维评分锚点】
+- fidelity_score（保真度）：
+  - 1.0 = 摘要内容完全忠实原文，无任何新增事实
+  - 0.9 = 措辞合理延展但无实质新增
+  - 0.7 = 存在轻微失真或模糊表述
+  - 0.5 = 有明显捏造数字/结论/事件
+  - 0.2 = 大量编造
+- coverage_score（覆盖度）：
+  - 1.0 = 原文所有要点都被涵盖
+  - 0.8 = 遗漏 1-2 个次要要点
+  - 0.6 = 遗漏重要要点
+  - 0.3 = 只覆盖小部分
+- category_score（分类准确）：
+  - 1.0 = L1/L2 分类和标签完全准确
+  - 0.8 = 分类正确但标签有偏差
+  - 0.5 = 一级分类错误
+
+【硬性扣分规则】
+1. 摘要中出现原文不存在的具体数字、人名、比例、结论 → fidelity 强制 ≤0.7。
+2. 原文有编号列表（1. 2. 3.）而摘要 key_points 数量不足 → coverage 强制 ≤0.8。
+3. 不允许无理由打满分。打 1.0 必须说明"已核对 X/Y/Z 要点均忠实"。
+4. audit_score = 0.4×fidelity + 0.35×coverage + 0.25×category（保留3位小数）。
+5. comments 必须具体：指出遗漏了哪条要点、哪处数字存疑、哪个标签不准确。即使没发现问题，也要写"已核对全文，XX要点均覆盖"，不能只写"归纳质量良好"。
+
+严格输出 JSON，不输出任何额外文字。""",
+        # output schema（与 v1 相同）
+        {
+            "type": "object",
+            "required": ["fidelity_score", "coverage_score", "category_score", "audit_score", "comments"],
+            "properties": {
+                "fidelity_score":  {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                "coverage_score":  {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                "category_score":  {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                "audit_score":     {"type": "number", "minimum": 0.0, "maximum": 1.0},
+                "comments":        {"type": "string"},
+            },
+        },
+    ),
 }
 
 # ================================================================
@@ -206,7 +250,7 @@ _REGISTRY: Dict[str, Dict[str, PromptPair]] = {
 _LATEST: Dict[str, str] = {
     "p2": "v2",
     "p3": "v1",
-    "p5": "v1",
+    "p5": "v2",
     "p6": "v1",
 }
 
