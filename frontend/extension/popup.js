@@ -31,9 +31,12 @@
   function updateFooter(records) {
     const s = records.filter((r) => r.status === "SUCCESS").length;
     const p = records.filter((r) => r.status === "PENDING").length;
+    const proc = records.filter((r) => r.status === "PROCESSING").length;
     const f = records.filter((r) => r.status === "FAILED").length;
-    footerLeft.textContent = `已采集 ${s + p + f} 篇`;
-    footerRight.innerHTML = `成功 <span class="num-ok">${s}</span> · 失败 <span class="num-fail">${f}</span>`;
+    footerLeft.textContent = `已采集 ${s + p + proc + f} 篇`;
+    footerRight.innerHTML =
+      (proc > 0 ? `采集中 <span class="num-proc">${proc}</span> · ` : "") +
+      `成功 <span class="num-ok">${s}</span> · 失败 <span class="num-fail">${f}</span>`;
   }
   async function getActiveTab() {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });

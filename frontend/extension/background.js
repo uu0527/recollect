@@ -9,7 +9,7 @@
 
   const RECORDS_KEY = "recollect_records";
   const SYNC_STATE_KEY = "recollect_sync_state";  // 同步断点（worker 被杀后恢复）
-  const STATUS = { PENDING: "PENDING", SUCCESS: "SUCCESS", FAILED: "FAILED" };
+  const STATUS = { PENDING: "PENDING", PROCESSING: "PROCESSING", SUCCESS: "SUCCESS", FAILED: "FAILED" };
 
   const state = {
     running: false,       // 同步进行中
@@ -217,6 +217,14 @@
 
       // 2) 合并到记录表（增量：已有 SUCCESS 跳过）
       const records = await mergeScan(notes, state.boardName);
+      // 僵死 PROCESSING 重置为 PENDING（上次中断留下的"采集中"记录）
+      const staleProcessing = records.filter((r) => r.status === STATUS.PROCESSING);
+      for (const sp of staleProcessing) {
+        await updateRecord(
+          { note_id: sp.note_id, url: sp.url, title: sp.title || "", content: "", images: [], author: "", likes: 0, collected_at: sp.collected_at },
+          { status: STATUS.PENDING, fail_reason: "" }
+        );
+      }
       const toCollect = records.filter(
         (r) => notes.some((n) => n.note_id === r.note_id) && r.status !== STATUS.SUCCESS
       );
@@ -233,6 +241,11 @@
       if (mode === "collect") {
       for (let i = startIndex; i < toCollect.length; i++) {
         const rec = toCollect[i];
+        // 状态流转: PENDING → PROCESSING（采集中）
+        await updateRecord(
+          { note_id: rec.note_id, url: rec.url, title: rec.title || "", content: "", images: [], author: "", likes: 0, collected_at: rec.collected_at },
+          { status: STATUS.PROCESSING, fail_reason: "" }
+        );
         const result = await collectDetail(rec, tab.id);
 
         if (result && result.error) {
