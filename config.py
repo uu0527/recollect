@@ -81,8 +81,28 @@ P2_THRESHOLDS = {
 # ============================================================
 _FEISHU_APP_ID = os.environ.get("FEISHU_APP_ID", "")
 _FEISHU_APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "")
-_FEISHU_BITABLE_TOKEN = os.environ.get("FEISHU_BITABLE_TOKEN", "")
+_FEISHU_BITABLE_TOKEN = os.environ.get("FEISHU_BITABLE_TOKEN", "") or os.environ.get("BITABLE_TOKEN", "")
+
+
+def _parse_bitable_token(raw: str) -> str:
+    """兼容三种输入格式，提取纯 app_token：
+    1. 裸 app_token:            baseXXX...
+    2. 完整 URL:                https://xxx.feishu.cn/base/XXX?table=tblYYY
+    3. 短格式 app_token?table=: baseXXX?table=tblYYY
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    if "/base/" in raw:
+        seg = raw.split("/base/")[1]
+        return seg.split("/")[0].split("?")[0].split("#")[0]
+    return raw.split("?")[0].split("#")[0]
+
+
 _FEISHU_BITABLE_TABLE_ID = os.environ.get("FEISHU_BITABLE_TABLE_ID", "")
+# 若 BITABLE_TOKEN 内嵌 table= 参数，自动提取为 TABLE_ID（未单独配置时）
+if not _FEISHU_BITABLE_TABLE_ID and "table=" in _FEISHU_BITABLE_TOKEN:
+    _FEISHU_BITABLE_TABLE_ID = _FEISHU_BITABLE_TOKEN.split("table=")[1].split("&")[0].split("#")[0]
 
 FEISHU = {
     "use_mock": not all([_FEISHU_APP_ID, _FEISHU_APP_SECRET,
@@ -90,7 +110,7 @@ FEISHU = {
     "mock_output": WRITE_DIR / "mock_feishu_bitable.jsonl",
     "app_id": _FEISHU_APP_ID,
     "app_secret": _FEISHU_APP_SECRET,
-    "bitable_app_token": _FEISHU_BITABLE_TOKEN,
+    "bitable_app_token": _parse_bitable_token(_FEISHU_BITABLE_TOKEN),
     "bitable_table_id": _FEISHU_BITABLE_TABLE_ID,
 }
 

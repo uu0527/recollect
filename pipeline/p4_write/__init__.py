@@ -69,7 +69,8 @@ def _row_mapping(s: SummarizedNote, audit: Optional[AuditResult]) -> Dict:
     return {
         "note_id": s.note_id,
         "标题": s.title,
-        "链接": s.url,
+        # 飞书 URL 字段(type=15) 要求 {text, link} 对象格式
+        "链接": {"text": s.url, "link": s.url} if s.url else "",
         "一级分类": s.category_l1,
         "二级分类": s.category_l2,
         "标签": ",".join(s.tags),
@@ -89,84 +90,115 @@ def _row_mapping(s: SummarizedNote, audit: Optional[AuditResult]) -> Dict:
 # ============================================================
 class FeishuBitable:
     """
-    lark-oapi SDK 封装，支持：
-      - 创建/更新记录（bitable）
-      - 批量 upsert
-      - 错误重试（指数退避）
-      - 去重逻辑（通过 note_id 字段）
+    真实飞书 Bitable 写入（HTTP 直连，不依赖 lark-oapi SDK 版本差异）
+    - 懒获取 tenant_access_token
+    - 批量 upsert：先搜索 note_id → 存在则更新，否则创建
+    - 错误重试（指数退避）
     """
+
+    API_BASE = "https://open.feishu.cn/open-apis"
 
     def __init__(self, app_id: str, app_secret: str, bitable_app_token: str, bitable_table_id: str):
         self.app_id = app_id
         self.app_secret = app_secret
         self.bitable_app_token = bitable_app_token
         self.bitable_table_id = bitable_table_id
+        self._token: Optional[str] = None
 
-        config = Config(
-            app_id=app_id,
-            app_secret=app_secret,
-            verification_token="",
-            encrypt_key="",
-            log_level=LogLevel.DEBUG,
-            retry_config=RetryConfig(
-                max_retries=3,
-                backoff_factor=1.0,
-            ),
+    # ------------------------------------------------------------
+    # 鉴权
+    # ------------------------------------------------------------
+    def _get_token(self) -> str:
+        if self._token:
+            return self._token
+        body = {"app_id": self.app_id, "app_secret": self.app_secret}
+        resp = self._post(f"{self.API_BASE}/auth/v3/tenant_access_token/internal", body)
+        if resp.get("code") != 0:
+            raise RuntimeError(f"获取 tenant_access_token 失败: {resp.get('msg')}")
+        self._token = resp["tenant_access_token"]
+        return self._token
+
+    # ------------------------------------------------------------
+    # HTTP 工具
+    # ------------------------------------------------------------
+    @staticmethod
+    def _post(url: str, body: Dict, token: str = "") -> Dict:
+        import json as _json
+        import urllib.request
+
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        req = urllib.request.Request(
+            url, data=_json.dumps(body).encode("utf-8"), method="POST", headers=headers,
         )
-        self._client = ApiClient(config)
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return _json.loads(resp.read().decode("utf-8"))
 
+    @staticmethod
+    def _get(url: str, token: str) -> Dict:
+        import json as _json
+        import urllib.request
+
+        req = urllib.request.Request(
+            url, method="GET",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return _json.loads(resp.read().decode("utf-8"))
+
+    # ------------------------------------------------------------
+    # 记录操作
+    # ------------------------------------------------------------
     def _create_record(self, record: Dict) -> bool:
         """创建单条记录，失败返回 False"""
         try:
-            req = CreateAppTableRecordRequest.builder() \
-                .app_token(self.bitable_app_token) \
-                .table_id(self.bitable_table_id) \
-                .request_body(AppTableRecordBody.builder() \
-                              .fields(record) \
-                              .build()) \
-                .build()
-            resp = Record.create(req, self._client)
-            return resp.code == 0
+            resp = self._post(
+                f"{self.API_BASE}/bitable/v1/apps/{self.bitable_app_token}/tables/{self.bitable_table_id}/records",
+                {"fields": record},
+                self._get_token(),
+            )
+            return resp.get("code") == 0
         except Exception as e:
             print(f"[FeishuBitable] create_record 失败: {e!r}")
             return False
 
     def _batch_upsert_records(self, records: List[Dict], key_field: str = "note_id") -> int:
         """
-        批量 upsert 记录（lark-oapi 不支持直接 upsert，所以先查后建/更新）
+        批量 upsert 记录（先查后建/更新）
         - records: List[Dict]，每条是 _row_mapping 的结果
         - key_field: 用于去重的字段名（默认 "note_id"）
         返回：成功写入数量
         """
+        import urllib.parse
+
+        token = self._get_token()
         success_cnt = 0
         for record in records:
-            # 先尝试查询是否存在
             try:
-                req = ListAppTableRecordsRequest.builder() \
-                    .app_token(self.bitable_app_token) \
-                    .table_id(self.bitable_table_id) \
-                    .filter(f'{{"{key_field}"}} = "{record[key_field]}"') \
-                    .page_size(1) \
-                    .build()
-                resp = Record.list(req, self._client)
-                if resp.code == 0 and resp.data.items:
-                    # 存在：更新
-                    item = resp.data.items[0]
-                    update_req = UpdateAppTableRecordRequest.builder() \
-                        .app_token(self.bitable_app_token) \
-                        .table_id(self.bitable_table_id) \
-                        .record_id(item.record_id) \
-                        .request_body(AppTableRecordBody.builder() \
-                                      .fields(record) \
-                                      .build()) \
-                        .build()
-                    update_resp = Record.update(update_req, self._client)
-                    if update_resp.code == 0:
-                        success_cnt += 1
-                else:
-                    # 不存在：创建
-                    if self._create_record(record):
-                        success_cnt += 1
+                # 先尝试查询是否存在（飞书标准 filter 语法）
+                if key_field in record:
+                    filter_expr = f'CurrentValue.[{key_field}]="{record[key_field]}"'
+                    query = urllib.parse.urlencode({"filter": filter_expr, "page_size": 1})
+                    resp = self._get(
+                        f"{self.API_BASE}/bitable/v1/apps/{self.bitable_app_token}/tables/{self.bitable_table_id}/records?{query}",
+                        token,
+                    )
+                    items = (resp.get("data") or {}).get("items") or []
+                    if resp.get("code") == 0 and items:
+                        # 存在：更新
+                        record_id = items[0].get("record_id")
+                        upd = self._post(
+                            f"{self.API_BASE}/bitable/v1/apps/{self.bitable_app_token}/tables/{self.bitable_table_id}/records/{record_id}",
+                            {"fields": record},
+                            token,
+                        )
+                        if upd.get("code") == 0:
+                            success_cnt += 1
+                        continue
+                # 不存在：创建
+                if self._create_record(record):
+                    success_cnt += 1
             except Exception as e:
                 print(f"[FeishuBitable] batch_upsert_records 单条失败: {e!r}")
                 continue

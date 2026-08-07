@@ -33,8 +33,34 @@ import os  # noqa: E402
 
 APP_ID = os.environ.get("FEISHU_APP_ID", "").strip()
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "").strip()
+
+
+def parse_bitable(raw: str) -> dict:
+    """兼容三种输入格式，返回 {app_token, table_id}：
+    1. 裸 app_token:            baseXXX...
+    2. 完整 URL:                https://xxx.feishu.cn/base/XXX?table=tblYYY
+    3. 短格式 app_token?table=: baseXXX?table=tblYYY
+    """
+    raw = raw.strip()
+    out = {"app_token": "", "table_id": ""}
+    if not raw:
+        return out
+    if "table=" in raw:
+        out["table_id"] = raw.split("table=")[1].split("&")[0].split("#")[0]
+    if "/base/" in raw:
+        seg = raw.split("/base/")[1]
+        out["app_token"] = seg.split("/")[0].split("?")[0].split("#")[0]
+    else:
+        out["app_token"] = raw.split("?")[0].split("#")[0]
+    return out
+
+
 # 兼容两种键名：项目标准 FEISHU_BITABLE_TOKEN；用户习惯 BITABLE_TOKEN
-BITABLE_TOKEN = os.environ.get("FEISHU_BITABLE_TOKEN", "").strip() or os.environ.get("BITABLE_TOKEN", "").strip()
+_parsed = parse_bitable(
+    os.environ.get("FEISHU_BITABLE_TOKEN", "").strip() or os.environ.get("BITABLE_TOKEN", "").strip()
+)
+BITABLE_TOKEN = _parsed["app_token"]
+EMBEDDED_TABLE_ID = _parsed["table_id"]
 
 API_BASE = "https://open.feishu.cn/open-apis"
 
@@ -77,9 +103,15 @@ def main() -> int:
         print("\n示例：")
         print("  FEISHU_APP_ID=cli_xxxxx")
         print("  FEISHU_APP_SECRET=xxxxx")
-        print("  FEISHU_BITABLE_TOKEN=base_xxxxx（多维表格 URL 中的 base_ 前缀段）")
+        print("  FEISHU_BITABLE_TOKEN=base_xxxxx（多维表格 app_token，或完整 URL/含 table= 的短链接）")
         print("\n获取方式：飞书开放平台 https://open.feishu.cn → 自建应用「凭证与基础信息」")
         return 1
+
+    # BITABLE_TOKEN 中已内嵌 table_id（?table= 格式）
+    if EMBEDDED_TABLE_ID:
+        print(f"[INFO] BITABLE_TOKEN 已包含 table_id={EMBEDDED_TABLE_ID}")
+        print(f"[INFO] 如确认该表就是要用的数据表，可直接将 FEISHU_BITABLE_TABLE_ID 设为它")
+        print()
 
     # ---------- 2. 获取 tenant_access_token ----------
     try:
