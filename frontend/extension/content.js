@@ -112,13 +112,19 @@
   function extractDetailFromDOM() {
     // 风控拦截：直接标记，不尝试提取
     if (isBlockedPage()) {
+      console.log("[ReCollect][detail] 页面被风控拦截，跳过", location.href);
       return { _blocked: true, message: "页面触发小红书风控验证（扫码/验证码），需人工处理" };
     }
+
+    console.log("[ReCollect][detail] 进入详情采集函数，pathname=", location.pathname);
 
     const pick = (selectors) => {
       for (const sel of selectors) {
         const el = document.querySelector(sel);
-        if (el && el.textContent.trim()) return el.textContent.trim();
+        if (el && el.textContent.trim()) {
+          console.log("[ReCollect][detail] 命中选择器:", sel, "→", el.textContent.trim().slice(0, 40));
+          return el.textContent.trim();
+        }
       }
       return "";
     };
@@ -141,9 +147,11 @@
     // 图片：详情页所有大图（swiper / slider / content 内 img）
     const images = [];
     const seen = new Set();
-    document.querySelectorAll(
+    const imgEls = document.querySelectorAll(
       "#sliderContainer img, .swiper-slide img, #detail-content img, .note-content img, .carousel img"
-    ).forEach((img) => {
+    );
+    console.log("[ReCollect][detail] 匹配到图片节点数:", imgEls.length);
+    imgEls.forEach((img) => {
       const src = img.getAttribute("src") || img.getAttribute("data-src") || "";
       if (!src || src.startsWith("data:") || seen.has(src)) return;
       seen.add(src);
@@ -154,6 +162,13 @@
     const m = location.pathname.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
     const noteId = m ? m[2] : "";
 
+    console.log("[ReCollect][detail] 生成 payload:", {
+      note_id: noteId,
+      title: title.slice(0, 30),
+      content_len: content.length,
+      images: images.length,
+      author,
+    });
     return {
       note_id: noteId,
       url: location.href,
@@ -276,22 +291,32 @@
 
   // 详情页内容稳定后自动采集（等待 1.2s 让 SPA 渲染完成）
   function autoCollectIfDetail() {
-    if (!isDetailPath(location.pathname)) return;
+    if (!isDetailPath(location.pathname)) {
+      console.log("[ReCollect][passive] 非详情页，跳过:", location.pathname);
+      return;
+    }
     const noteId = getCurrentNoteId();
-    if (!noteId || noteId === lastCollectedNoteId) return;
+    if (!noteId) {
+      console.log("[ReCollect][passive] 无法提取 note_id:", location.pathname);
+      return;
+    }
+    if (noteId === lastCollectedNoteId) return;
 
     clearTimeout(collectTimer);
     collectTimer = setTimeout(() => {
       try {
         const detail = extractDetailFromDOM();
         if (detail && detail._blocked) return; // 风控页不记录
-        if (!detail.content && detail.images.length === 0) return; // 空页不记录
+        if (!detail.content && detail.images.length === 0) {
+          console.log("[ReCollect][passive] 详情页无内容（选择器未命中？），不记录:", noteId);
+          return; // 空页不记录
+        }
 
         lastCollectedNoteId = noteId;
         // 上报给 background 暂存
         chrome.runtime.sendMessage({ type: "RECOLLECT_AUTO_DETAIL", detail });
         console.log("[ReCollect] 已自动采集:", noteId, detail.title || "(无标题)");
-      } catch (_) { /* 静默失败，不影响浏览 */ }
+      } catch (e) { console.log("[ReCollect][passive] 采集异常:", e); }
     }, 1200);
   }
 
@@ -305,4 +330,24 @@
   window.addEventListener("popstate", () => setTimeout(autoCollectIfDetail, 300));
   // 首次注入时如果已在详情页，也尝试采集
   setTimeout(autoCollectIfDetail, 2500);
+
+  // MutationObserver 兜底：详情正文节点出现即触发采集
+  // （覆盖：新标签页打开详情 / SPA 渲染慢 / 路由事件未触发的场景）
+  const DETAIL_CONTENT_SEL =
+    "#detail-desc, .desc, .note-content, #detail-content, .note-text, #detail-title, .note-title";
+  let observerStarted = false;
+  function ensureObserver() {
+    if (observerStarted) return;
+    observerStarted = true;
+    const obs = new MutationObserver(() => {
+      // 详情正文节点已出现 → 触发采集（带防抖）
+      if (document.querySelector(DETAIL_CONTENT_SEL)) {
+        autoCollectIfDetail();
+      }
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+    // 观察 30s 后自动断开（避免常驻开销）
+    setTimeout(() => obs.disconnect(), 30000);
+  }
+  ensureObserver();
 })();
