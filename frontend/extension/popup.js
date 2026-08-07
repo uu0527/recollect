@@ -1,5 +1,6 @@
 // ReCollect 拾遗 - Popup 逻辑
 // 流程：扫描当前页收藏 / 采集详情页 → 暂存 → 导出 JSONL
+// 健壮性：sendMessage 失败（content script 未注入）→ 自动注入后重试
 (() => {
   "use strict";
 
@@ -23,6 +24,28 @@
     return tabs[0];
   }
 
+  /**
+   * 向 tab 发消息；若 content script 未注入（扩展刚更新/页面未刷新），
+   * 自动用 chrome.scripting.executeScript 注入 content.js 后重试一次。
+   */
+  async function sendToTab(tabId, msg) {
+    try {
+      return await chrome.tabs.sendMessage(tabId, msg);
+    } catch (e) {
+      // content script 未注入 → 主动注入
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          files: ["content.js"],
+        });
+      } catch (injErr) {
+        throw new Error("注入 content script 失败: " + injErr.message);
+      }
+      // 注入后重试一次
+      return await chrome.tabs.sendMessage(tabId, msg);
+    }
+  }
+
   scanBtn.addEventListener("click", async () => {
     setStatus("扫描中...");
     scanBtn.disabled = true;
@@ -32,7 +55,7 @@
         setStatus("请先打开小红书收藏页", "err");
         return;
       }
-      const resp = await chrome.tabs.sendMessage(tab.id, {
+      const resp = await sendToTab(tab.id, {
         type: "RECOLLECT_SCAN",
         autoScroll: autoScrollChk.checked,
         maxScrolls: 30,
@@ -45,7 +68,7 @@
         setStatus("扫描失败：" + (resp && resp.error), "err");
       }
     } catch (e) {
-      setStatus("无法连接页面，请刷新收藏页后重试", "err");
+      setStatus("无法连接页面：" + e.message, "err");
     } finally {
       scanBtn.disabled = false;
     }
@@ -61,7 +84,7 @@
         setStatus("请先打开一条小红书笔记", "err");
         return;
       }
-      const resp = await chrome.tabs.sendMessage(tab.id, { type: "RECOLLECT_DETAIL" });
+      const resp = await sendToTab(tab.id, { type: "RECOLLECT_DETAIL" });
       if (resp && resp.ok && resp.isDetail) {
         // 与列表去重：同 note_id 用详情覆盖（补齐正文/图片）
         const idx = collectedNotes.findIndex((n) => n.note_id === resp.detail.note_id);
@@ -79,7 +102,7 @@
         setStatus("采集失败：" + (resp && resp.error), "err");
       }
     } catch (e) {
-      setStatus("无法连接页面，请刷新后重试", "err");
+      setStatus("无法连接页面：" + e.message, "err");
     } finally {
       detailBtn.disabled = false;
     }
@@ -95,7 +118,7 @@
         setStatus("请先打开小红书页面", "err");
         return;
       }
-      const resp = await chrome.tabs.sendMessage(tab.id, { type: "RECOLLECT_DEBUG" });
+      const resp = await sendToTab(tab.id, { type: "RECOLLECT_DEBUG" });
       if (resp && resp.ok) {
         const text = JSON.stringify(resp.dump, null, 2);
         // 复制到剪贴板（popup 有 clipboard 权限时）
@@ -105,7 +128,7 @@
         setStatus("诊断失败：" + (resp && resp.error), "err");
       }
     } catch (e) {
-      setStatus("无法连接页面，请刷新后重试", "err");
+      setStatus("无法连接页面：" + e.message, "err");
     } finally {
       debugBtn.disabled = false;
     }
