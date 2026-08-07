@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ReCollect 拾遗 - 收藏激活助手",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "读取小红书收藏列表并采集笔记内容，整理为可导入知识库的本地文件。仅本地处理，不上传任何数据。",
   "permissions": [
     "activeTab",

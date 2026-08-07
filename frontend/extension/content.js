@@ -112,6 +112,59 @@
    *   - 作者: .author-wrapper .user-name / .info .user-name
    *   - 标题: #detail-title / .title
    */
+  // 从浮层详情 DOM 提取 note_id（URL 无 note_id 时的兜底）
+  // 策略优先级：
+  //   1. 详情内容节点容器内的 /explore/{id} 链接
+  //   2. 页面所有 /explore/{id} 链接中，DOM 距离详情节点最近的一个
+  //   3. 详情区图片 URL 中的 note_id 片段
+  function extractNoteIdFromOverlayDOM() {
+    // 详情内容节点（与 extractDetailFromDOM 的选择器保持一致）
+    const contentSel = [
+      "#detail-desc", ".desc", ".note-content", "#detail-content",
+      ".note-text", "#detail-title", ".note-title",
+    ].join(", ");
+    const detailNode = document.querySelector(contentSel);
+    const noteIdRe = /\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/;
+
+    // 策略 1：详情节点向上找 3 层容器（不越过详情区域），容器内找 explore 链接
+    // 注意：不能到 body/html（会误抓列表页其他卡片链接）
+    if (detailNode) {
+      let node = detailNode;
+      for (let i = 0; i < 3 && node; i++) {
+        // 达到 body/html 即停止（避免全局误匹配列表链接）
+        if (node.tagName === "BODY" || node.tagName === "HTML") break;
+        const links = node.querySelectorAll('a[href*="/explore/"], a[href*="/discovery/item/"]');
+        for (const a of links) {
+          const mm = (a.getAttribute("href") || "").match(noteIdRe);
+          if (mm) return mm[2];
+        }
+        node = node.parentElement;
+      }
+      // 策略 3：详情区域图片 URL 可能含 note_id（形如 sns-img/noteId_xxx）
+      // 图片通常在详情容器（非正文节点子树），从详情节点向上 3 层的容器内找
+      let imgScope = detailNode;
+      for (let i = 0; i < 3 && imgScope; i++) {
+        if (imgScope.tagName === "BODY" || imgScope.tagName === "HTML") break;
+        const imgs = imgScope.querySelectorAll("img");
+        for (const img of imgs) {
+          const src = img.getAttribute("src") || img.getAttribute("data-src") || "";
+          const im = src.match(/\/([0-9a-zA-Z]{20,})(?:[._/]|$)/);
+          if (im) return im[1].split("_")[0];
+        }
+        imgScope = imgScope.parentElement;
+      }
+    }
+
+    // 策略 2：页面所有 explore 链接，取第一个（列表页兜底；浮层打开时
+    // 列表仍在 DOM，通常列表首条即浮层对应条目——不保证，但优于空）
+    const allLinks = document.querySelectorAll('a[href*="/explore/"], a[href*="/discovery/item/"]');
+    for (const a of allLinks) {
+      const mm = (a.getAttribute("href") || "").match(noteIdRe);
+      if (mm) return mm[2];
+    }
+    return "";
+  }
+
   function extractDetailFromDOM() {
     // 风控拦截：直接标记，不尝试提取
     if (isBlockedPage()) {
@@ -163,7 +216,13 @@
 
     // 从 URL 取 note_id（详情页 /explore/{id}）
     const m = location.pathname.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
-    const noteId = m ? m[2] : "";
+    let noteId = m ? m[2] : "";
+
+    // DOM 兜底（浮层模式）：URL 无 note_id（如 /board/ 内浮层）时，
+    // 从详情内容节点附近的链接提取 note_id
+    if (!noteId) {
+      noteId = extractNoteIdFromOverlayDOM();
+    }
 
     console.log("[ReCollect][detail] 生成 payload:", {
       note_id: noteId,
@@ -459,13 +518,19 @@
 
   function getCurrentNoteId() {
     const m = location.pathname.match(/^\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
-    return m ? m[2] : "";
+    if (m) return m[2];
+    // 浮层模式兜底：从 DOM 提取（详情内容节点附近的 explore 链接）
+    return extractNoteIdFromOverlayDOM();
   }
 
   // 详情页内容稳定后自动采集（等待 1.2s 让 SPA 渲染完成）
   function autoCollectIfDetail() {
     const type = pageTypeLabel(location.pathname);
-    if (!isDetailPath(location.pathname)) {
+    // 门控：URL 是详情页，或 DOM 已有浮层详情内容（收藏页浮层打开场景）
+    const hasOverlayDetail = !!document.querySelector(
+      "#detail-desc, .desc, .note-content, #detail-content, .note-text, #detail-title, .note-title"
+    );
+    if (!isDetailPath(location.pathname) && !hasOverlayDetail) {
       console.log(`[ReCollect][passive] 非笔记详情页，跳过: ${location.pathname} (类型=${type})`);
       return;
     }
