@@ -8,6 +8,7 @@
   "use strict";
 
   const RECORDS_KEY = "recollect_records";
+  const SYNC_STATE_KEY = "recollect_sync_state";  // 同步断点（worker 被杀后恢复）
   const STATUS = { PENDING: "PENDING", SUCCESS: "SUCCESS", FAILED: "FAILED" };
 
   const state = {
@@ -20,6 +21,24 @@
     failReasons: {},      // note_id → 失败原因
     startedAt: 0,
   };
+
+  // ============================================================
+  // 同步断点持久化（MV3 worker 可能被终止，需可恢复）
+  // ============================================================
+  async function saveSyncCheckpoint(queue, index, total) {
+    await chrome.storage.local.set({
+      [SYNC_STATE_KEY]: { queue, index, total, savedAt: Date.now() },
+    });
+  }
+
+  async function loadSyncCheckpoint() {
+    const data = await chrome.storage.local.get(SYNC_STATE_KEY);
+    return data[SYNC_STATE_KEY] || null;
+  }
+
+  async function clearSyncCheckpoint() {
+    await chrome.storage.local.remove(SYNC_STATE_KEY);
+  }
 
   // ============================================================
   // 记录表 CRUD（chrome.storage.local）
@@ -194,8 +213,16 @@
         (r) => notes.some((n) => n.note_id === r.note_id) && r.status !== STATUS.SUCCESS
       );
 
+      // 2.5) 断点续跑：worker 被杀后恢复，从上次 index 继续（跳过已处理的）
+      let startIndex = 0;
+      const cp = await loadSyncCheckpoint();
+      if (cp && cp.queue && cp.total === toCollect.length) {
+        startIndex = cp.index;
+        console.log(`[ReCollect][sync] 检测到断点，从 ${startIndex}/${cp.total} 续跑`);
+      }
+
       // 3) 逐篇采集详情（限流防风控）
-      for (let i = 0; i < toCollect.length; i++) {
+      for (let i = startIndex; i < toCollect.length; i++) {
         const rec = toCollect[i];
         const result = await collectDetail(rec, tab.id);
 
@@ -220,6 +247,12 @@
         }
 
         state.completed += 1;
+        // 保存断点（每处理 1 条，worker 被杀可恢复）
+        await saveSyncCheckpoint(
+          toCollect.map((r) => r.note_id),
+          i + 1,
+          toCollect.length
+        );
         notify({
           ok: true,
           stage: "collecting",
@@ -239,6 +272,9 @@
           await new Promise((r) => setTimeout(r, 8000 + Math.floor(Math.random() * 4000)));
         }
       }
+
+      // 3.5) 同步完成，清除断点
+      await clearSyncCheckpoint();
 
       // 4) 完成后尝试返回收藏夹页
       try { await chrome.tabs.update(tab.id, { url: tab.url.split("?")[0], active: true }); } catch (_) {}
@@ -265,6 +301,16 @@
   // 消息路由
   // ============================================================
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    // worker 恢复自动续跑：有断点且未在运行 → 继续上次同步
+    if (!state.running && msg && msg.type !== "RECOLLECT_SYNC_START") {
+      loadSyncCheckpoint().then((cp) => {
+        if (cp && cp.queue && cp.queue.length > 0 && cp.index < cp.total) {
+          console.log(`[ReCollect][sync] worker 恢复，自动续跑 ${cp.index}/${cp.total}`);
+          syncBoard(() => {});
+        }
+      });
+    }
+
     // 启动收藏夹同步
     if (msg && msg.type === "RECOLLECT_SYNC_START") {
       syncBoard((p) => {}).then(sendResponse);
