@@ -117,8 +117,29 @@
   }
 
   // 打开详情页并采集（失败返回 {error}）
+  // 策略：优先 SPA 内模拟点击（不整页跳转 → 降低风控特征），失败回退整页跳转
   async function collectDetail(note, tabId, attempt = 1) {
     const cleanUrl = note.url.split("?")[0];
+
+    // ---- 方式1: SPA 内点击（推荐，行为像真人）----
+    try {
+      const openResp = await chrome.tabs.sendMessage(tabId, { type: "RECOLLECT_OPEN_NOTE", noteId: note.note_id });
+      if (openResp && openResp.ok && openResp.clicked) {
+        // 等待 SPA 路由切换 + 详情渲染
+        await new Promise((r) => setTimeout(r, attempt === 1 ? 5000 : 7000));
+        const detail = await tryCollectDetail(tabId);
+        if (detail && !detail.error) {
+          // 返回列表页（SPA 后退），为下一条做准备
+          try { await chrome.tabs.sendMessage(tabId, { type: "RECOLLECT_GO_BACK" }); } catch (_) {}
+          return detail;
+        }
+        if (detail && detail.error && !detail.error.includes("风控")) {
+          console.log("[ReCollect][sync] SPA 点击后采集失败，回退整页跳转:", detail.error);
+        }
+      }
+    } catch (_) { /* content script 未注入或非列表页，回退整页 */ }
+
+    // ---- 方式2: 整页跳转（回退方案）----
     try {
       await chrome.tabs.update(tabId, { url: cleanUrl, active: true });
     } catch (e) {
@@ -126,41 +147,27 @@
     }
     const loaded = await waitTabComplete(tabId, 15000);
     if (!loaded) return { error: "页面加载超时（15s）" };
-    // 等待渲染（降速防风控：首采 4s，重试 6s）
     await new Promise((r) => setTimeout(r, attempt === 1 ? 4000 : 6000));
-
-    const trySend = async () => {
-      const resp = await chrome.tabs.sendMessage(tabId, { type: "RECOLLECT_DETAIL" });
-      if (resp && resp.ok) {
-        if (resp.detail && resp.detail._blocked) {
-          return { error: "触发小红书风控验证（扫码），无法采集" };
-        }
-        if (resp.isDetail && resp.detail) return resp.detail;
-        return { error: "非笔记详情页" };
-      }
-      return { error: "content script 无响应" };
-    };
-
-    try {
-      const d = await trySend();
-      // 风控失败 → 自动重试一次（等更久，可能解除风控）
-      if (d && d.error && d.error.includes("风控") && attempt === 1) {
-        console.log("[ReCollect][sync] 风控拦截，8s 后重试:", note.note_id);
-        await new Promise((r) => setTimeout(r, 8000));
-        const retry = await trySend();
-        return retry && retry.error ? retry : retry;
-      }
-      return d;
-    } catch (_) {
-      // content script 未注入 → 注入后重试
-      try {
-        await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
-        await new Promise((r) => setTimeout(r, 1500));
-        return await trySend();
-      } catch (e) {
-        return { error: "DOM 解析失败: " + e.message };
-      }
+    const detail = await tryCollectDetail(tabId);
+    if (detail && detail.error && detail.error.includes("风控") && attempt === 1) {
+      console.log("[ReCollect][sync] 风控拦截，8s 后重试:", note.note_id);
+      await new Promise((r) => setTimeout(r, 8000));
+      return tryCollectDetail(tabId);
     }
+    return detail;
+  }
+
+  // 向详情页发消息采集
+  async function tryCollectDetail(tabId) {
+    const resp = await chrome.tabs.sendMessage(tabId, { type: "RECOLLECT_DETAIL" });
+    if (resp && resp.ok) {
+      if (resp.detail && resp.detail._blocked) {
+        return { error: "触发小红书风控验证（扫码），无法采集" };
+      }
+      if (resp.isDetail && resp.detail) return resp.detail;
+      return { error: "非笔记详情页" };
+    }
+    return { error: "content script 无响应" };
   }
 
   // ============================================================

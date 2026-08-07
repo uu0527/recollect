@@ -247,6 +247,41 @@
       })();
       return true; // 异步响应
     }
+
+    // SPA 内打开笔记详情（模拟点击卡片，不整页跳转 → 降低风控特征）
+    if (msg && msg.type === "RECOLLECT_OPEN_NOTE") {
+      try {
+        const noteId = msg.noteId;
+        // 在当前 DOM 找对应卡片链接
+        const links = document.querySelectorAll('a[href*="/explore/"], a[href*="/discovery/item/"]');
+        let target = null;
+        for (const a of links) {
+          const href = a.getAttribute("href") || "";
+          if (href.includes(noteId)) { target = a; break; }
+        }
+        if (!target) {
+          console.log("[ReCollect][open] 未找到卡片:", noteId);
+          sendResponse({ ok: false, error: "卡片未找到" });
+          return;
+        }
+        // 滚动到卡片可见（小红书懒加载，需先滚动到才可点击）
+        if (typeof target.scrollIntoView === "function") {
+          target.scrollIntoView({ block: "center" });
+        }
+        setTimeout(() => {
+          try {
+            target.click();
+            console.log("[ReCollect][open] 已模拟点击:", noteId);
+            sendResponse({ ok: true, clicked: true, noteId });
+          } catch (e) {
+            sendResponse({ ok: false, error: "点击失败: " + e.message });
+          }
+        }, 800);
+        return true; // 异步响应
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
+    }
     // 详情页采集：当前页必须是 /explore/{note_id} 笔记详情页
     if (msg && msg.type === "RECOLLECT_DETAIL") {
       try {
@@ -273,7 +308,25 @@
       }
     }
 
-    // DOM 诊断：dump 页面真实结构，用于调整选择器
+    // SPA 返回列表页（详情浮层关闭 / 浏览器后退）
+    if (msg && msg.type === "RECOLLECT_GO_BACK") {
+      try {
+        // 优先点关闭按钮（小红书详情浮层常见 .close / [aria-label=关闭]）
+        const closeBtn = document.querySelector(
+          ".close, .close-btn, .detail-close, [class*=close] button, [aria-label*='关闭']"
+        );
+        if (closeBtn) {
+          closeBtn.click();
+          sendResponse({ ok: true, method: "close-btn" });
+          return;
+        }
+        // 回退：SPA 历史后退
+        history.back();
+        sendResponse({ ok: true, method: "history-back" });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
+    }
     if (msg && msg.type === "RECOLLECT_DEBUG") {
       try {
         const dump = {
