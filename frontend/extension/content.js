@@ -282,21 +282,34 @@
         sendResponse({ ok: false, error: String(e) });
       }
     }
-    // 详情页采集：当前页必须是 /explore/{note_id} 笔记详情页
+    // 详情页采集：支持两种模式
+    //  A. /explore/{note_id} 独立详情页
+    //  B. 收藏夹页 SPA 浮层详情（URL 仍是 /board/，但 DOM 已有详情内容）
     if (msg && msg.type === "RECOLLECT_DETAIL") {
       try {
-        const isDetail = /^\/(explore|discovery\/item)\/[0-9a-zA-Z]+/.test(location.pathname);
-        console.log("[ReCollect][detail] RECOLLECT_DETAIL 收到，pathname=", location.pathname, "isDetail=", isDetail);
-        if (!isDetail) {
+        const isDetailUrl = /^\/(explore|discovery\/item)\/[0-9a-zA-Z]+/.test(location.pathname);
+        // 浮层检测：页面 DOM 已含详情正文节点
+        const isOverlayDetail = !!document.querySelector(
+          "#detail-desc, .note-content, #detail-content, .note-text, #detail-title, .note-title"
+        );
+        console.log(
+          "[ReCollect][detail] RECOLLECT_DETAIL 收到，pathname=", location.pathname,
+          "isDetailUrl=", isDetailUrl, "isOverlay=", isOverlayDetail
+        );
+        if (!isDetailUrl && !isOverlayDetail) {
           sendResponse({
             ok: true,
             isDetail: false,
             detail: null,
-            message: `当前页面不是笔记详情页（pathname=${location.pathname}），请打开一条笔记（URL 形如 /explore/xxx）后再试`,
+            message: `当前不是笔记详情页（URL=${location.pathname}），请先打开一篇笔记（点开收藏夹中的笔记即可）`,
           });
           return;
         }
         const detail = extractDetailFromDOM();
+        // 浮层模式下 note_id 可能取不到（URL 是 /board/），用 msg 里传入的兜底
+        if ((!detail.note_id) && msg.noteId) {
+          detail.note_id = msg.noteId;
+        }
         sendResponse({
           ok: true,
           isDetail: true,
