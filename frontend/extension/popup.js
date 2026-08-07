@@ -6,6 +6,7 @@
 
   const scanBtn = document.getElementById("scanBtn");
   const detailBtn = document.getElementById("detailBtn");
+  const batchBtn = document.getElementById("batchBtn");
   const exportBtn = document.getElementById("exportBtn");
   const debugBtn = document.getElementById("debugBtn");
   const statusEl = document.getElementById("status");
@@ -105,6 +106,38 @@
       setStatus("无法连接页面：" + e.message, "err");
     } finally {
       detailBtn.disabled = false;
+    }
+  });
+
+  // 批量采集全部详情：逐个打开详情页补正文/图片（由 background 队列处理）
+  batchBtn.addEventListener("click", async () => {
+    if (!collectedNotes.length) {
+      setStatus("请先扫描收藏列表", "err");
+      return;
+    }
+    setStatus("批量采集中，请保持弹窗打开...");
+    batchBtn.disabled = true;
+    exportBtn.disabled = true;
+    try {
+      const resp = await chrome.runtime.sendMessage({
+        type: "RECOLLECT_BATCH",
+        notes: collectedNotes,
+      });
+      if (resp && resp.ok && resp.done) {
+        collectedNotes = resp.results || collectedNotes;
+        const ok = collectedNotes.filter((n) => !n._collect_failed && n.content).length;
+        const fail = collectedNotes.filter((n) => n._collect_failed).length;
+        setStatus(`批量完成：${collectedNotes.length} 条（有正文 ${ok}，失败 ${fail}）`, "ok");
+        exportBtn.disabled = collectedNotes.length === 0;
+      } else if (resp && resp.ok && resp.progress) {
+        // 进度回调（popup 打开期间 background 会多次回调）
+      } else {
+        setStatus("批量采集失败：" + (resp && resp.error), "err");
+      }
+    } catch (e) {
+      setStatus("批量采集异常：" + e.message, "err");
+    } finally {
+      batchBtn.disabled = false;
     }
   });
 

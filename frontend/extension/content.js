@@ -166,7 +166,6 @@
       })();
       return true; // 异步响应
     }
-
     // 详情页采集：当前页是笔记详情 → 提取正文/图片/作者
     if (msg && msg.type === "RECOLLECT_DETAIL") {
       try {
