@@ -146,9 +146,58 @@
   }
 
   // ============================================================
+  // 被动采集存储：content script 手动浏览时自动上报
+  // ============================================================
+  const AUTO_STORAGE_KEY = "recollect_auto_notes";
+
+  async function autoLoadNotes() {
+    const data = await chrome.storage.local.get(AUTO_STORAGE_KEY);
+    return data[AUTO_STORAGE_KEY] || [];
+  }
+
+  async function autoSaveNote(detail) {
+    const notes = await autoLoadNotes();
+    // 按 note_id 去重（保留最新）
+    const idx = notes.findIndex((n) => n.note_id === detail.note_id);
+    if (idx >= 0) notes[idx] = detail;
+    else notes.push(detail);
+    await chrome.storage.local.set({ [AUTO_STORAGE_KEY]: notes });
+    return notes.length;
+  }
+
+  // ============================================================
   // 消息路由
   // ============================================================
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    // 被动采集：content script 上报详情
+    if (msg && msg.type === "RECOLLECT_AUTO_DETAIL") {
+      const detail = msg.detail;
+      if (detail && detail.note_id) {
+        autoSaveNote(detail).then((total) => {
+          sendResponse({ ok: true, total });
+        });
+        return true; // 异步响应
+      }
+      sendResponse({ ok: false, error: "无效详情" });
+      return;
+    }
+
+    // 读取被动采集结果（popup 汇总用）
+    if (msg && msg.type === "RECOLLECT_AUTO_GET") {
+      autoLoadNotes().then((notes) => {
+        sendResponse({ ok: true, notes, count: notes.length });
+      });
+      return true;
+    }
+
+    // 清空被动采集结果
+    if (msg && msg.type === "RECOLLECT_AUTO_CLEAR") {
+      chrome.storage.local.remove(AUTO_STORAGE_KEY, () => {
+        sendResponse({ ok: true });
+      });
+      return true;
+    }
+
     // 启动批量采集（popup 轮询 RECOLLECT_BATCH_STATUS 获取进度）
     if (msg && msg.type === "RECOLLECT_BATCH_START") {
       if (state.running) {

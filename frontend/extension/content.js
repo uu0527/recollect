@@ -237,4 +237,52 @@
       }
     }
   });
+
+  // ============================================================
+  // 被动采集模式：用户在详情页手动浏览时自动记录（不触发风控）
+  // 依赖：小红书 SPA 内跳转（history.pushState），监听 URL 变化
+  // ============================================================
+  let lastCollectedNoteId = "";
+  let collectTimer = null;
+
+  function isDetailPath(pathname) {
+    return /\/(explore|discovery\/item)\/[0-9a-zA-Z]+/.test(pathname);
+  }
+
+  function getCurrentNoteId() {
+    const m = location.pathname.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
+    return m ? m[2] : "";
+  }
+
+  // 详情页内容稳定后自动采集（等待 1.2s 让 SPA 渲染完成）
+  function autoCollectIfDetail() {
+    if (!isDetailPath(location.pathname)) return;
+    const noteId = getCurrentNoteId();
+    if (!noteId || noteId === lastCollectedNoteId) return;
+
+    clearTimeout(collectTimer);
+    collectTimer = setTimeout(() => {
+      try {
+        const detail = extractDetailFromDOM();
+        if (detail && detail._blocked) return; // 风控页不记录
+        if (!detail.content && detail.images.length === 0) return; // 空页不记录
+
+        lastCollectedNoteId = noteId;
+        // 上报给 background 暂存
+        chrome.runtime.sendMessage({ type: "RECOLLECT_AUTO_DETAIL", detail });
+        console.log("[ReCollect] 已自动采集:", noteId, detail.title || "(无标题)");
+      } catch (_) { /* 静默失败，不影响浏览 */ }
+    }, 1200);
+  }
+
+  // SPA 路由变化监听（小红书是前端路由）
+  const _pushState = history.pushState;
+  history.pushState = function (...args) {
+    const ret = _pushState.apply(this, args);
+    setTimeout(autoCollectIfDetail, 300);
+    return ret;
+  };
+  window.addEventListener("popstate", () => setTimeout(autoCollectIfDetail, 300));
+  // 首次注入时如果已在详情页，也尝试采集
+  setTimeout(autoCollectIfDetail, 2500);
 })();

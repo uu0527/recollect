@@ -1,13 +1,13 @@
 // ReCollect 拾遗 - Popup 逻辑
-// 流程：扫描当前页收藏 / 采集详情页 → 暂存 → 导出 JSONL
+// 流程：扫描收藏列表 / 手动浏览自动采集 → 合并 → 导出 JSONL
 // 健壮性：sendMessage 失败（content script 未注入）→ 自动注入后重试
 (() => {
   "use strict";
 
   const scanBtn = document.getElementById("scanBtn");
   const detailBtn = document.getElementById("detailBtn");
-  const batchBtn = document.getElementById("batchBtn");
   const exportBtn = document.getElementById("exportBtn");
+  const clearBtn = document.getElementById("clearBtn");
   const debugBtn = document.getElementById("debugBtn");
   const statusEl = document.getElementById("status");
   const taskIdInput = document.getElementById("taskId");
@@ -23,6 +23,26 @@
   async function getActiveTab() {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     return tabs[0];
+  }
+
+  // 加载被动采集结果（手动浏览时自动记录的详情）
+  async function loadAutoNotes() {
+    try {
+      const resp = await chrome.runtime.sendMessage({ type: "RECOLLECT_AUTO_GET" });
+      return resp && resp.ok ? resp.notes : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // 合并：扫描列表 + 被动采集详情（详情按 note_id 覆盖列表项）
+  function mergeNotes(listNotes, autoNotes) {
+    const map = new Map();
+    for (const n of listNotes) map.set(n.note_id, { ...n });
+    for (const n of autoNotes) {
+      if (n && n.note_id) map.set(n.note_id, { ...(map.get(n.note_id) || {}), ...n });
+    }
+    return Array.from(map.values());
   }
 
   /**
@@ -109,58 +129,15 @@
     }
   });
 
-  // 批量采集全部详情：启动后台队列 + 轮询进度（popup 需保持打开）
-  batchBtn.addEventListener("click", async () => {
-    if (!collectedNotes.length) {
-      setStatus("请先扫描收藏列表", "err");
-      return;
+  // 合并被动采集结果到当前列表（手动浏览时自动记录的详情）
+  async function syncAutoNotes() {
+    const auto = await loadAutoNotes();
+    if (auto.length) {
+      collectedNotes = mergeNotes(collectedNotes, auto);
     }
-    setStatus("正在启动批量采集...");
-    batchBtn.disabled = true;
-    exportBtn.disabled = true;
-    try {
-      const startResp = await chrome.runtime.sendMessage({
-        type: "RECOLLECT_BATCH_START",
-        notes: collectedNotes,
-      });
-      if (!startResp || !startResp.ok) {
-        setStatus("启动失败：" + (startResp && startResp.error), "err");
-        batchBtn.disabled = false;
-        return;
-      }
-
-      // 轮询进度（每 2s 一次，最多等 10 分钟）
-      for (let i = 0; i < 300; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
-        const st = await chrome.runtime.sendMessage({ type: "RECOLLECT_BATCH_STATUS" });
-        if (!st) continue;
-        if (st.running) {
-          if (st.blockedCount > 0) {
-            setStatus(`采集中 ${st.completed}/${st.total}…（${st.blockedCount} 条被风控）`);
-          } else {
-            setStatus(`采集中 ${st.completed}/${st.total}… 请保持弹窗打开`);
-          }
-          continue;
-        }
-        // 完成
-        if (st.results) {
-          collectedNotes = st.results;
-          const ok = collectedNotes.filter((n) => !n._collect_failed && n.content).length;
-          const fail = collectedNotes.filter((n) => n._collect_failed && !n._blocked).length;
-          const blocked = collectedNotes.filter((n) => n._blocked).length;
-          let msg = `批量完成：共 ${collectedNotes.length} 条（有正文 ${ok}，失败 ${fail}）`;
-          if (blocked > 0) msg += `，${blocked} 条被风控需手动扫码`;
-          setStatus(msg, "ok");
-          exportBtn.disabled = collectedNotes.length === 0;
-        }
-        break;
-      }
-    } catch (e) {
-      setStatus("批量采集异常：" + e.message, "err");
-    } finally {
-      batchBtn.disabled = false;
-    }
-  });
+    exportBtn.disabled = collectedNotes.length === 0;
+    return auto.length;
+  }
 
   // DOM 诊断：dump 页面结构并复制到剪贴板（供开发者调选择器）
   debugBtn.addEventListener("click", async () => {
@@ -210,15 +187,24 @@
       .join("\n");
   }
 
-  exportBtn.addEventListener("click", () => {
-    if (!collectedNotes.length) return;
+  exportBtn.addEventListener("click", async () => {
+    if (!collectedNotes.length) {
+      // 尝试先合并自动采集
+      await syncAutoNotes();
+      if (!collectedNotes.length) {
+        setStatus("暂无内容：请先扫描或手动浏览笔记", "err");
+        return;
+      }
+    }
     setStatus("导出中...");
     const taskId = taskIdInput.value.trim() || "recollect";
     const filename = `${taskId}_notes.jsonl`;
 
     try {
+      // 导出前再次合并自动采集
+      await syncAutoNotes();
       const jsonl = toRawNoteJSONL(collectedNotes);
-      // 用 data URL（而非 blob URL）：popup 页面上下文稳定，且避免大文件 base64 问题用 blob
+      const withContent = collectedNotes.filter((n) => n.content).length;
       const blob = new Blob([jsonl], { type: "application/x-ndjson" });
       const url = URL.createObjectURL(blob);
       chrome.downloads.download(
@@ -228,7 +214,7 @@
           if (chrome.runtime.lastError) {
             setStatus("导出失败：" + chrome.runtime.lastError.message, "err");
           } else {
-            setStatus(`已导出 ${collectedNotes.length} 条 → ${filename}`, "ok");
+            setStatus(`已导出 ${collectedNotes.length} 条（含正文 ${withContent}）→ ${filename}`, "ok");
           }
         }
       );
@@ -236,4 +222,22 @@
       setStatus("导出失败：" + String(e), "err");
     }
   });
+
+  // 清空已记录（自动采集存储）
+  clearBtn.addEventListener("click", async () => {
+    try {
+      await chrome.runtime.sendMessage({ type: "RECOLLECT_AUTO_CLEAR" });
+    } catch (_) { /* ignore */ }
+    collectedNotes = [];
+    exportBtn.disabled = true;
+    setStatus("已清空记录", "ok");
+  });
+
+  // 打开弹窗时自动加载被动采集结果
+  (async () => {
+    const autoCount = await syncAutoNotes();
+    if (autoCount > 0) {
+      setStatus(`已加载 ${autoCount} 条自动采集记录`, "ok");
+    }
+  })();
 })();

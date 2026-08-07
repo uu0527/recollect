@@ -11,6 +11,7 @@
     .btn:hover { background: #185FA5; }
     .btn.secondary { background: #eee; color: #333; }
     .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .auto-hint { font-size: 11px; color: #1D9E75; background: #E1F5EE; border-radius: 5px; padding: 5px 8px; margin: 4px 0; text-align: center; }
     .status { font-size: 12px; margin-top: 8px; min-height: 16px; color: #333; }
     .status.ok { color: #1D9E75; }
     .status.err { color: #E24B4A; }
@@ -32,8 +33,11 @@
 
   <button id="scanBtn" class="btn">1. 扫描收藏列表</button>
   <button id="detailBtn" class="btn secondary">采集当前笔记详情</button>
-  <button id="batchBtn" class="btn secondary">批量采集全部详情</button>
+  <div id="autoHint" class="auto-hint">
+    手动浏览笔记时会自动记录（防风控）
+  </div>
   <button id="exportBtn" class="btn secondary" disabled>2. 导出 JSONL</button>
+  <button id="clearBtn" class="btn" style="background:#F1EFE8;color:#5F5E5A;">清空已记录</button>
   <button id="debugBtn" class="btn" style="background:#F1EFE8;color:#5F5E5A;">DOM 诊断（复制给开发者）</button>
 
   <div id="status" class="status"></div>
