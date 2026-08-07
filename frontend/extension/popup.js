@@ -109,30 +109,51 @@
     }
   });
 
-  // 批量采集全部详情：逐个打开详情页补正文/图片（由 background 队列处理）
+  // 批量采集全部详情：启动后台队列 + 轮询进度（popup 需保持打开）
   batchBtn.addEventListener("click", async () => {
     if (!collectedNotes.length) {
       setStatus("请先扫描收藏列表", "err");
       return;
     }
-    setStatus("批量采集中，请保持弹窗打开...");
+    setStatus("正在启动批量采集...");
     batchBtn.disabled = true;
     exportBtn.disabled = true;
     try {
-      const resp = await chrome.runtime.sendMessage({
-        type: "RECOLLECT_BATCH",
+      const startResp = await chrome.runtime.sendMessage({
+        type: "RECOLLECT_BATCH_START",
         notes: collectedNotes,
       });
-      if (resp && resp.ok && resp.done) {
-        collectedNotes = resp.results || collectedNotes;
-        const ok = collectedNotes.filter((n) => !n._collect_failed && n.content).length;
-        const fail = collectedNotes.filter((n) => n._collect_failed).length;
-        setStatus(`批量完成：${collectedNotes.length} 条（有正文 ${ok}，失败 ${fail}）`, "ok");
-        exportBtn.disabled = collectedNotes.length === 0;
-      } else if (resp && resp.ok && resp.progress) {
-        // 进度回调（popup 打开期间 background 会多次回调）
-      } else {
-        setStatus("批量采集失败：" + (resp && resp.error), "err");
+      if (!startResp || !startResp.ok) {
+        setStatus("启动失败：" + (startResp && startResp.error), "err");
+        batchBtn.disabled = false;
+        return;
+      }
+
+      // 轮询进度（每 2s 一次，最多等 10 分钟）
+      for (let i = 0; i < 300; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const st = await chrome.runtime.sendMessage({ type: "RECOLLECT_BATCH_STATUS" });
+        if (!st) continue;
+        if (st.running) {
+          if (st.blockedCount > 0) {
+            setStatus(`采集中 ${st.completed}/${st.total}…（${st.blockedCount} 条被风控）`);
+          } else {
+            setStatus(`采集中 ${st.completed}/${st.total}… 请保持弹窗打开`);
+          }
+          continue;
+        }
+        // 完成
+        if (st.results) {
+          collectedNotes = st.results;
+          const ok = collectedNotes.filter((n) => !n._collect_failed && n.content).length;
+          const fail = collectedNotes.filter((n) => n._collect_failed && !n._blocked).length;
+          const blocked = collectedNotes.filter((n) => n._blocked).length;
+          let msg = `批量完成：共 ${collectedNotes.length} 条（有正文 ${ok}，失败 ${fail}）`;
+          if (blocked > 0) msg += `，${blocked} 条被风控需手动扫码`;
+          setStatus(msg, "ok");
+          exportBtn.disabled = collectedNotes.length === 0;
+        }
+        break;
       }
     } catch (e) {
       setStatus("批量采集异常：" + e.message, "err");

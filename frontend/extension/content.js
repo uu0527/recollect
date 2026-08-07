@@ -72,6 +72,26 @@
   }
 
   /**
+   * 检测小红书风控验证页（扫码观看/滑块验证等）。
+   * 返回 true 表示当前页面被风控拦截，无法读取笔记内容。
+   */
+  function isBlockedPage() {
+    const bodyText = (document.body && document.body.textContent || "").slice(0, 2000);
+    // 常见风控提示
+    if (/扫码|二维码|验证码|安全验证|请使用.*客户端|暂时无法浏览|异常访问/.test(bodyText)) {
+      return true;
+    }
+    // 常见验证 DOM 特征
+    if (
+      document.querySelector(".captcha, .verify, #captcha, .qr-code, .qrcode, [class*=captcha], [class*=verify]") ||
+      document.querySelector("canvas") // 验证码常渲染在 canvas
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * 从笔记详情页 DOM 提取正文/图片/作者信息。
    * 小红书笔记详情页典型结构（页面改版时需更新选择器）：
    *   - 正文: #detail-desc / .desc / .note-content
@@ -80,6 +100,11 @@
    *   - 标题: #detail-title / .title
    */
   function extractDetailFromDOM() {
+    // 风控拦截：直接标记，不尝试提取
+    if (isBlockedPage()) {
+      return { _blocked: true, message: "页面触发小红书风控验证（扫码/验证码），需人工处理" };
+    }
+
     const pick = (selectors) => {
       for (const sel of selectors) {
         const el = document.querySelector(sel);

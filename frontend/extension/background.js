@@ -15,6 +15,7 @@
     activeTabId: null,  // 当前采集用的 tab
     running: false,
     completed: 0,
+    blockedCount: 0,
   };
 
   // 返回列表页 URL（小红书收藏页固定路径；用户可能在不同 profile 下）
@@ -43,22 +44,30 @@
     const loaded = await waitTabComplete(tabId, 15000);
     if (!loaded) return null;
 
-    // 等待页面渲染 + 稍等 content script 注入
-    await new Promise((r) => setTimeout(r, 2500));
+    // 等待页面渲染 + content script 注入（降速防风控：至少等 3s）
+    await new Promise((r) => setTimeout(r, 3000));
 
     // 向详情页发消息采集（content script 已注入）
     try {
       const resp = await chrome.tabs.sendMessage(tabId, { type: "RECOLLECT_DETAIL" });
-      if (resp && resp.ok && resp.isDetail) {
-        return resp.detail;
+      if (resp && resp.ok) {
+        if (resp.detail && resp.detail._blocked) {
+          return { _blocked: true, message: resp.detail.message };
+        }
+        if (resp.isDetail) return resp.detail;
       }
     } catch (_) {
       // content script 未注入（详情页可能是 SPA 内部跳转）→ 尝试注入
       try {
         await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
-        await new Promise((r) => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 1200));
         const resp = await chrome.tabs.sendMessage(tabId, { type: "RECOLLECT_DETAIL" });
-        if (resp && resp.ok && resp.isDetail) return resp.detail;
+        if (resp && resp.ok) {
+          if (resp.detail && resp.detail._blocked) {
+            return { _blocked: true, message: resp.detail.message };
+          }
+          if (resp.isDetail) return resp.detail;
+        }
       } catch (_) { /* ignore */ }
     }
     return null;
@@ -70,6 +79,8 @@
     state.running = true;
     state.completed = 0;
     state.results = [];
+    state.blockedCount = 0;
+    const blocked = []; // 被风控拦截的 note_id
 
     try {
       // 复用当前激活 tab（确保是小红书页面）
@@ -81,13 +92,17 @@
       }
       state.activeTabId = tab.id;
 
-      for (const note of state.queue) {
+      for (let i = 0; i < state.queue.length; i++) {
+        const note = state.queue[i];
         // 已有关键字段的跳过
         if (note.content && note.images && note.title && !note.title.startsWith("[ReCollect]")) {
           state.results.push(note);
         } else {
           const detail = await collectDetail(note, tab.id);
-          if (detail && detail.content) {
+          if (detail && detail._blocked) {
+            blocked.push(note.note_id);
+            state.results.push({ ...note, _collect_failed: true, _blocked: true });
+          } else if (detail && detail.content) {
             state.results.push({ ...note, ...detail });
           } else {
             // 采集失败：保留原始链接数据，标记
@@ -101,7 +116,14 @@
           completed: state.completed,
           total: state.queue.length,
           current: note.title || note.note_id,
+          blockedCount: blocked.length,
         });
+
+        // 限流：每条之间等待（防触发小红书风控），最后一条不用等
+        if (i < state.queue.length - 1) {
+          const waitMs = 3000 + Math.floor(Math.random() * 2000); // 3-5s 随机间隔
+          await new Promise((r) => setTimeout(r, waitMs));
+        }
       }
 
       // 完成后返回列表页
@@ -109,7 +131,13 @@
         await chrome.tabs.update(tab.id, { url: LIST_URL, active: true });
       } catch (_) { /* ignore */ }
 
-      notify({ ok: true, done: true, results: state.results });
+      state.blockedCount = blocked.length;
+      notify({
+        ok: true,
+        done: true,
+        results: state.results,
+        blockedCount: blocked.length,
+      });
     } catch (e) {
       notify({ ok: false, error: String(e) });
     } finally {
@@ -121,21 +149,28 @@
   // 消息路由
   // ============================================================
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    // 批量采集：popup 传入待补全笔记列表
-    if (msg && msg.type === "RECOLLECT_BATCH") {
+    // 启动批量采集（popup 轮询 RECOLLECT_BATCH_STATUS 获取进度）
+    if (msg && msg.type === "RECOLLECT_BATCH_START") {
+      if (state.running) {
+        sendResponse({ ok: false, error: "批量采集已在运行" });
+        return;
+      }
       state.queue = msg.notes || [];
       state.results = [];
-      // 异步处理，通过 sendResponse 返回最终结果（popup 需保持打开）
-      processQueue(sendResponse);
-      return true;
+      state.completed = 0;
+      // 后台异步跑，不阻塞 sendResponse
+      processQueue(() => {});
+      sendResponse({ ok: true, started: true, total: state.queue.length });
     }
 
-    // 查询批量采集进度（备用）
+    // 查询批量采集进度（popup 轮询用）
     if (msg && msg.type === "RECOLLECT_BATCH_STATUS") {
       sendResponse({
         running: state.running,
         completed: state.completed,
         total: state.queue.length,
+        results: state.running ? null : state.results,
+        blockedCount: state.blockedCount || 0,
       });
     }
   });
