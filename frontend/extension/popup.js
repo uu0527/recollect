@@ -6,6 +6,7 @@
   const scanBtn = document.getElementById("scanBtn");
   const detailBtn = document.getElementById("detailBtn");
   const exportBtn = document.getElementById("exportBtn");
+  const debugBtn = document.getElementById("debugBtn");
   const statusEl = document.getElementById("status");
   const taskIdInput = document.getElementById("taskId");
   const autoScrollChk = document.getElementById("autoScroll");
@@ -81,6 +82,32 @@
       setStatus("无法连接页面，请刷新后重试", "err");
     } finally {
       detailBtn.disabled = false;
+    }
+  });
+
+  // DOM 诊断：dump 页面结构并复制到剪贴板（供开发者调选择器）
+  debugBtn.addEventListener("click", async () => {
+    setStatus("诊断中...");
+    debugBtn.disabled = true;
+    try {
+      const tab = await getActiveTab();
+      if (!tab || !tab.url || !tab.url.includes("xiaohongshu.com")) {
+        setStatus("请先打开小红书页面", "err");
+        return;
+      }
+      const resp = await chrome.tabs.sendMessage(tab.id, { type: "RECOLLECT_DEBUG" });
+      if (resp && resp.ok) {
+        const text = JSON.stringify(resp.dump, null, 2);
+        // 复制到剪贴板（popup 有 clipboard 权限时）
+        try { await navigator.clipboard.writeText(text); } catch (_) { /* 忽略 */ }
+        setStatus("已复制 DOM 诊断到剪贴板，请发给开发者", "ok");
+      } else {
+        setStatus("诊断失败：" + (resp && resp.error), "err");
+      }
+    } catch (e) {
+      setStatus("无法连接页面，请刷新后重试", "err");
+    } finally {
+      debugBtn.disabled = false;
     }
   });
 

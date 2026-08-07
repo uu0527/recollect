@@ -6,7 +6,8 @@
   "permissions": [
     "activeTab",
     "downloads",
-    "storage"
+    "storage",
+    "clipboardWrite"
   ],
   "host_permissions": [
     "https://www.xiaohongshu.com/*"

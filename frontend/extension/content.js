@@ -41,10 +41,18 @@
       const authorEl = a.querySelector(".author") || a.querySelector(".user-name");
       const author = authorEl ? authorEl.textContent.trim() : "";
 
-      // 点赞数（可选）
+      // 点赞数（可选；支持 "2.8万" / "1.2w" / "3456" / "1.5k"）
       const likeEl = a.querySelector(".like-wrapper .count") || a.querySelector(".count");
       const likesText = likeEl ? likeEl.textContent.trim() : "";
-      const likes = parseInt(likesText.replace(/[^\d]/g, ""), 10) || 0;
+      let likes = 0;
+      const likesMatch = likesText.replace(/,/g, "").match(/^([\d.]+)\s*(万|w|k)?$/i);
+      if (likesMatch) {
+        const num = parseFloat(likesMatch[1]) || 0;
+        const unit = (likesMatch[2] || "").toLowerCase();
+        if (unit === "万" || unit === "w") likes = Math.round(num * 10000);
+        else if (unit === "k") likes = Math.round(num * 1000);
+        else likes = Math.round(num);
+      }
 
       // 封面图（可选）
       const imgEl = a.querySelector("img.cover, img");
@@ -170,6 +178,36 @@
           detail,
           message: isDetail ? "" : "当前页面不是笔记详情页，请打开一条笔记后再试",
         });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
+    }
+
+    // DOM 诊断：dump 页面真实结构，用于调整选择器
+    if (msg && msg.type === "RECOLLECT_DEBUG") {
+      try {
+        const dump = {
+          url: location.href,
+          pathname: location.pathname,
+          exploreLinks: document.querySelectorAll('a[href*="/explore/"]').length,
+          discoveryLinks: document.querySelectorAll('a[href*="/discovery/item/"]').length,
+          allALinks: document.querySelectorAll("a").length,
+          bodyChildren: Array.from(document.body.children).slice(0, 10).map((el) =>
+            `${el.tagName.toLowerCase()}.${(el.className && typeof el.className === "string" ? el.className : "").split(" ")[0]}`
+          ),
+          sampleNoteItem: (() => {
+            const el = document.querySelector(".note-item, .feeds-container, .note-list, section");
+            return el ? (el.outerHTML || "").slice(0, 500) : "";
+          })(),
+          sampleTitleEls: Array.from(document.querySelectorAll(".title, span.title, .note-item .title"))
+            .slice(0, 3).map((el) => el.textContent.trim().slice(0, 30)),
+          hasDetailDesc: !!document.querySelector("#detail-desc, .desc, .note-content"),
+          detailDescSample: (() => {
+            const el = document.querySelector("#detail-desc, .desc, .note-content");
+            return el ? el.textContent.trim().slice(0, 100) : "";
+          })(),
+        };
+        sendResponse({ ok: true, dump });
       } catch (e) {
         sendResponse({ ok: false, error: String(e) });
       }
