@@ -111,19 +111,52 @@
     }
   });
 
+  // 生成 ReCollect P1 RawNote 格式的 JSONL（与 background 逻辑一致）
+  function toRawNoteJSONL(notes) {
+    return notes
+      .map((n) => {
+        const record = {
+          note_id: n.note_id,
+          url: n.url,
+          title: n.title || `[ReCollect] ${n.url}`,
+          content: n.content || "",
+          images: n.images || (n.cover ? [n.cover] : []),
+          metadata: {
+            source: "xiaohongshu_extension",
+            author: n.author || "",
+            likes: n.likes || 0,
+            collected_at: n.collected_at || new Date().toISOString(),
+          },
+        };
+        return JSON.stringify(record);
+      })
+      .join("\n");
+  }
+
   exportBtn.addEventListener("click", () => {
     if (!collectedNotes.length) return;
     setStatus("导出中...");
     const taskId = taskIdInput.value.trim() || "recollect";
-    chrome.runtime.sendMessage(
-      { type: "RECOLLECT_EXPORT", notes: collectedNotes, taskId },
-      (resp) => {
-        if (resp && resp.ok) {
-          setStatus(`已导出 ${collectedNotes.length} 条 → ${resp.filename}`, "ok");
-        } else {
-          setStatus("导出失败：" + (resp && resp.error), "err");
+    const filename = `${taskId}_notes.jsonl`;
+
+    try {
+      const jsonl = toRawNoteJSONL(collectedNotes);
+      // 用 data URL（而非 blob URL）：popup 页面上下文稳定，且避免大文件 base64 问题用 blob
+      const blob = new Blob([jsonl], { type: "application/x-ndjson" });
+      const url = URL.createObjectURL(blob);
+      chrome.downloads.download(
+        { url, filename, saveAs: true },
+        (downloadId) => {
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          if (chrome.runtime.lastError) {
+            setStatus("导出失败：" + chrome.runtime.lastError.message, "err");
+          } else {
+            setStatus(`已导出 ${collectedNotes.length} 条 → ${filename}`, "ok");
+          }
         }
-      }
-    );
+      );
+    } catch (e) {
+      setStatus("导出失败：" + String(e), "err");
+    }
   });
 })();
