@@ -325,24 +325,68 @@
       (e) => {
         const target = e.target.closest ? e.target.closest(COLLECT_SEL) : null;
         if (!target) return;
-        const noteId = getCurrentNoteId() || "";
-        // 收集事件（无 note_id 时仍记录动作，Agent 侧可结合上下文）
-        const event = {
-          event_type: "note_collect",
-          note_id: noteId,
-          url: location.href.split("?")[0],
-          title: "",
-          content: "",
-          author: "",
-          images: [],
-          timestamp: new Date().toISOString(),
-          source: "browser",
-        };
-        console.log("[ReCollect][event] 检测到收藏操作:", event.note_id || "(当前页无 note_id)");
-        chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT", event });
+
+        // 提取 note_id：不依赖 pathname（支持普通详情页 / 收藏页浮层 / SPA 路由）
+        let noteId = "";
+        // 1) URL（/explore/{id} 或 /discovery/item/{id}）
+        const m = location.pathname.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
+        if (m) noteId = m[2];
+        // 2) 点击目标附近链接（浮层内收藏按钮通常在同容器的详情卡片里）
+        if (!noteId) {
+          let n = target;
+          for (let i = 0; i < 4 && n; i++) {
+            const link = n.querySelector && n.querySelector(
+              'a[href*="/explore/"], a[href*="/discovery/item/"]'
+            );
+            const href = link ? link.getAttribute("href") : (n.getAttribute && n.getAttribute("href")) || "";
+            const lm = href.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
+            if (lm) { noteId = lm[2]; break; }
+            n = n.parentElement;
+          }
+        }
+        // 3) DOM 兜底（详情内容节点/图片 URL）
+        if (!noteId) noteId = getCurrentNoteId();
+        // 4) 延迟重试（浮层刚打开 DOM 未渲染完，100ms 后再取一次）
+        if (!noteId) {
+          setTimeout(() => {
+            try {
+              const retryId = getCurrentNoteId();
+              if (retryId) {
+                console.log("[ReCollect][event] 收藏操作（延迟补采 note_id）:", retryId);
+                const ev = buildCollectEvent(retryId);
+                chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT", event: ev });
+              }
+            } catch (_) { /* 页面可能已卸载 */ }
+          }, 150);
+        }
+
+        const event = buildCollectEvent(noteId);
+        if (noteId) {
+          console.log("[ReCollect][event] ✅ 收藏事件 note_id=", noteId);
+        } else {
+          console.log("[ReCollect][event] 检测到收藏操作，但暂未提取到 note_id（稍后重试）");
+        }
+        try {
+          chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT", event });
+        } catch (_) { /* sendMessage 失败不影响采集流程 */ }
       },
       true // 捕获阶段，确保能先于页面处理拿到
     );
+  }
+
+  // 构造收藏事件
+  function buildCollectEvent(noteId) {
+    return {
+      event_type: "note_collect",
+      note_id: noteId || "",
+      url: location.href.split("?")[0],
+      title: "",
+      content: "",
+      author: "",
+      images: [],
+      timestamp: new Date().toISOString(),
+      source: "browser",
+    };
   }
 
   // 监听来自 popup / background 的消息
