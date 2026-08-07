@@ -200,6 +200,32 @@
     }
   }
 
+  // 识别当前收藏夹名称（/board/{id} 页面的标题）
+  function detectBoardName() {
+    // 优先 URL：/board/{id}
+    const boardMatch = location.pathname.match(/^\/board\/([0-9a-zA-Z]+)/);
+    if (!boardMatch) return "";
+    // 从 DOM 找收藏夹标题（board 页标题常见选择器）
+    const pickText = (selectors) => {
+      for (const sel of selectors) {
+        const el = document.querySelector(sel);
+        if (el && el.textContent.trim()) return el.textContent.trim();
+      }
+      return "";
+    };
+    const name = pickText([
+      ".board-title",
+      ".collection-title",
+      ".board-name",
+      ".title",
+      "h1",
+      ".info .title",
+    ]);
+    // 排除占位/通用文案
+    if (!name || name === "暂无简介" || name.length > 50) return boardMatch[1];
+    return name;
+  }
+
   // 监听来自 popup / background 的消息
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg && msg.type === "RECOLLECT_SCAN") {
@@ -209,7 +235,9 @@
             await scrollToLoadMore(msg.maxScrolls || 30);
           }
           const notes = extractNotesFromDOM();
-          sendResponse({ ok: true, notes, count: notes.length });
+          const boardName = detectBoardName();
+          console.log("[ReCollect][scan] 扫描完成:", notes.length, "条 | 收藏夹:", boardName || "(未识别)");
+          sendResponse({ ok: true, notes, count: notes.length, boardName });
         } catch (e) {
           sendResponse({ ok: false, error: String(e) });
         }
