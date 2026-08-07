@@ -74,19 +74,29 @@
   /**
    * 检测小红书风控验证页（扫码观看/滑块验证等）。
    * 返回 true 表示当前页面被风控拦截，无法读取笔记内容。
+   *
+   * 注意：不要用裸 canvas 检测！小红书详情页大量使用 canvas
+   * （图片懒加载/动效/水印），会把正常页面误判为风控页。
+   * 只有"验证码容器 + 文案"同时命中才算风控。
    */
   function isBlockedPage() {
-    const bodyText = (document.body && document.body.textContent || "").slice(0, 2000);
-    // 常见风控提示
-    if (/扫码|二维码|验证码|安全验证|请使用.*客户端|暂时无法浏览|异常访问/.test(bodyText)) {
-      return true;
-    }
-    // 常见验证 DOM 特征
-    if (
-      document.querySelector(".captcha, .verify, #captcha, .qr-code, .qrcode, [class*=captcha], [class*=verify]") ||
-      document.querySelector("canvas") // 验证码常渲染在 canvas
-    ) {
-      return true;
+    const bodyText = (document.body && document.body.textContent || "").slice(0, 3000);
+    // 明确的风控文案（扫码观看 / 安全验证等）
+    const hasText = /扫码|二维码|请用.*客户端|暂时无法浏览|异常访问|安全验证|验证码/.test(bodyText);
+
+    // 验证码容器（明确的 captcha/verify/qrcode 容器，不是任意 canvas）
+    const captchaEl = document.querySelector(
+      ".captcha, .verify, #captcha, .qr-code, .qrcode, [class*=captcha], [class*=verify]"
+    );
+
+    // 只有"验证码容器"或"强风控文案"命中才算被拦截
+    if (captchaEl) return true;
+    // 文案命中时：如果页面同时有笔记正文，说明是正常页面误含文字，不算
+    if (hasText) {
+      const hasContent = document.querySelector(
+        "#detail-desc, .desc, .note-content, #detail-content, .note-text"
+      );
+      if (!hasContent) return true; // 无正文 + 风控文案 → 真风控页
     }
     return false;
   }
@@ -230,6 +240,16 @@
             const el = document.querySelector("#detail-desc, .desc, .note-content");
             return el ? el.textContent.trim().slice(0, 100) : "";
           })(),
+          isBlocked: isBlockedPage(),
+          // 详情页选择器逐个诊断（排查 DOM 失效）
+          detailSelectorHits: {
+            title: !!document.querySelector("#detail-title, .title, .note-title"),
+            content: !!document.querySelector("#detail-desc, .desc, .note-content, #detail-content, .note-text"),
+            author: !!document.querySelector(".author-wrapper .user-name, .info .user-name, .author .name, .user-name"),
+            images: document.querySelectorAll("#sliderContainer img, .swiper-slide img, #detail-content img, .note-content img, .carousel img").length,
+            allImgs: document.querySelectorAll("img").length,
+            canvases: document.querySelectorAll("canvas").length,
+          },
         };
         sendResponse({ ok: true, dump });
       } catch (e) {
