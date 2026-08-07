@@ -8,6 +8,7 @@
   "use strict";
 
   const RECORDS_KEY = "recollect_records";
+  const EVENTS_KEY = "recollect_events";        // Browser Event Collector：事件缓冲
   const SYNC_STATE_KEY = "recollect_sync_state";  // 同步断点（worker 被杀后恢复）
   const STATUS = { PENDING: "PENDING", PROCESSING: "PROCESSING", SUCCESS: "SUCCESS", FAILED: "FAILED" };
 
@@ -50,6 +51,40 @@
 
   async function saveRecords(records) {
     await chrome.storage.local.set({ [RECORDS_KEY]: records });
+  }
+
+  // ============================================================
+  // Browser Event Collector：事件缓冲 CRUD
+  // ============================================================
+  async function loadEvents() {
+    const data = await chrome.storage.local.get(EVENTS_KEY);
+    return data[EVENTS_KEY] || [];
+  }
+
+  // 追加事件（去重：同 note_id 且 content 相同则忽略；缓冲上限 500 条防爆）
+  async function appendEvent(event) {
+    const events = await loadEvents();
+    if (!event || !event.event_type || !event.note_id) return false;
+    // 去重：同 note_id + 同 content 已存在 → 跳过（避免同篇反复浏览重复入库）
+    const dup = events.some(
+      (e) => e.note_id === event.note_id && (e.content || "") === (event.content || "")
+    );
+    if (dup) return false;
+    events.push(event);
+    if (events.length > 500) events.splice(0, events.length - 500);
+    await chrome.storage.local.set({ [EVENTS_KEY]: events });
+    console.log(`[ReCollect][event] 已缓存事件 ${events.length} 条`);
+    return true;
+  }
+
+  // 读取全部事件（供导出）
+  async function getAllEvents() {
+    return loadEvents();
+  }
+
+  // 清空事件缓冲（导出成功后调用）
+  async function clearEvents() {
+    await chrome.storage.local.remove(EVENTS_KEY);
   }
 
   // 写入扫描结果：新 note 标记 PENDING，已有记录保留原状态
@@ -359,6 +394,28 @@
         failReasons: state.failReasons,
         elapsedSec: state.startedAt ? ((Date.now() - state.startedAt) / 1000).toFixed(1) : 0,
       });
+    }
+
+    // Browser Event Collector：接收事件（note_view / note_collect）
+    if (msg && msg.type === "RECOLLECT_EVENT") {
+      appendEvent(msg.event).then((added) => {
+        sendResponse({ ok: true, added });
+      });
+      return true;
+    }
+
+    // Browser Event Collector：读取全部事件（供 popup 导出）
+    if (msg && msg.type === "RECOLLECT_EVENT_LIST") {
+      getAllEvents().then((events) => {
+        sendResponse({ ok: true, events, count: events.length });
+      });
+      return true;
+    }
+
+    // 清空事件缓冲
+    if (msg && msg.type === "RECOLLECT_EVENT_CLEAR") {
+      clearEvents().then(() => sendResponse({ ok: true }));
+      return true;
     }
 
     // 被动采集：用户浏览 /explore/{id} 时自动补全（仅 PENDING/FAILED 记录）

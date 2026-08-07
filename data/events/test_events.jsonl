@@ -1,0 +1,4 @@
+{"event_type": "note_view", "note_id": "n_evt_001", "url": "https://xhs.com/explore/n_evt_001", "title": "测试事件1", "content": "这是第一条事件正文内容", "author": "作者A", "images": ["img1.jpg"], "timestamp": "2026-08-07T20:00:00Z", "source": "browser"}
+{"event_type": "note_view", "note_id": "n_evt_002", "url": "https://xhs.com/explore/n_evt_002", "title": "测试事件2", "content": "第二条正文，足够长以通过过滤", "author": "作者B", "images": [], "timestamp": "2026-08-07T20:01:00Z", "source": "browser"}
+{"event_type": "note_collect", "note_id": "n_evt_003", "url": "https://xhs.com/explore/n_evt_003", "title": "", "content": "", "author": "", "images": [], "timestamp": "2026-08-07T20:02:00Z", "source": "browser"}
+{"event_type": "note_view", "note_id": "n_evt_001", "url": "https://xhs.com/explore/n_evt_001", "title": "测试事件1", "content": "这是第一条事件正文内容", "author": "作者A", "images": ["img1.jpg"], "timestamp": "2026-08-07T20:03:00Z", "source": "browser"}

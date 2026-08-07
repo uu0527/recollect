@@ -9,6 +9,7 @@
   const syncBtn = document.getElementById("syncBtn");
   const collectBtn = document.getElementById("collectBtn");
   const exportBtn = document.getElementById("exportBtn");
+  const eventBtn = document.getElementById("eventBtn");
   const feedbackBtn = document.getElementById("feedbackBtn");
   const debugBtn = document.getElementById("debugBtn");
   const clearBtn = document.getElementById("clearBtn");
@@ -416,4 +417,41 @@
     } catch (_) {}
     refreshRecords();
   })();
+
+  // ============================================================
+  // Browser Event Collector：导出事件（event.jsonl）
+  // 输出：recollect_events_{ts}.jsonl（用户保存到 data/events/）
+  // ============================================================
+  eventBtn.addEventListener("click", async () => {
+    showCard("正在导出事件…", "", "导出事件");
+    try {
+      const resp = await chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT_LIST" });
+      if (!resp || !resp.ok) { showCard("读取事件失败", "err", "导出失败"); return; }
+      const events = resp.events || [];
+      if (!events.length) {
+        showCard("暂无事件。请先浏览小红书笔记（自动捕获）或点击收藏按钮", "err", "无事件");
+        return;
+      }
+      const jsonl = events.map((e) => JSON.stringify(e)).join("\n");
+      const filename = `recollect_events_${Date.now()}.jsonl`;
+      const blob = new Blob([jsonl], { type: "application/x-ndjson" });
+      const url = URL.createObjectURL(blob);
+      chrome.downloads.download(
+        { url, filename, saveAs: true },
+        () => {
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          if (chrome.runtime.lastError) {
+            showCard("导出失败：" + chrome.runtime.lastError.message, "err", "导出失败");
+          } else {
+            showCard(
+              `已导出 ${events.length} 条事件 → ${filename}\n（保存到项目 data/events/ 后运行 event_ingest.py）`,
+              "ok", "导出完成"
+            );
+          }
+        }
+      );
+    } catch (e) {
+      showCard("导出异常：" + e.message, "err", "导出失败");
+    }
+  });
 })();

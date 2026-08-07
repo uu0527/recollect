@@ -229,6 +229,63 @@
     return name;
   }
 
+  // ============================================================
+  // Browser Event Collector：事件发射（note_view）
+  // 将用户真实浏览行为转成结构化事件，供 Local Agent 消费
+  // ============================================================
+  function emitNoteEvent(detail) {
+    if (!detail || !detail.note_id) return;
+    const event = {
+      event_type: "note_view",
+      note_id: detail.note_id,
+      url: detail.url || location.href.split("?")[0],
+      title: detail.title || "",
+      content: detail.content || "",
+      author: detail.author || "",
+      images: detail.images || [],
+      timestamp: new Date().toISOString(),
+      source: "browser",
+    };
+    console.log("[ReCollect][event] 发射事件 note_view:", event.note_id, "|", event.title.slice(0, 20));
+    chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT", event });
+  }
+
+  // 收藏按钮监听：检测用户点击收藏/取消收藏按钮（Phase 1：仅检测+记录事件）
+  function initCollectListener() {
+    // 收藏按钮常见特征：点击后 class 或 aria-label 变化（collect/favorite/like）
+    const COLLECT_SEL = [
+      ".collect-wrapper .collect-btn",
+      ".collect-btn",
+      "[class*=collect] button",
+      "[aria-label*=收藏]",
+      ".favorite-btn",
+      "[class*=favorite]",
+    ].join(", ");
+    document.addEventListener(
+      "click",
+      (e) => {
+        const target = e.target.closest ? e.target.closest(COLLECT_SEL) : null;
+        if (!target) return;
+        const noteId = getCurrentNoteId() || "";
+        // 收集事件（无 note_id 时仍记录动作，Agent 侧可结合上下文）
+        const event = {
+          event_type: "note_collect",
+          note_id: noteId,
+          url: location.href.split("?")[0],
+          title: "",
+          content: "",
+          author: "",
+          images: [],
+          timestamp: new Date().toISOString(),
+          source: "browser",
+        };
+        console.log("[ReCollect][event] 检测到收藏操作:", event.note_id || "(当前页无 note_id)");
+        chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT", event });
+      },
+      true // 捕获阶段，确保能先于页面处理拿到
+    );
+  }
+
   // 监听来自 popup / background 的消息
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg && msg.type === "RECOLLECT_SCAN") {
@@ -432,6 +489,8 @@
         lastCollectedNoteId = noteId;
         // 上报给 background 暂存
         chrome.runtime.sendMessage({ type: "RECOLLECT_AUTO_DETAIL", detail });
+        // Browser Event Collector：发射 note_view 事件（Phase 1）
+        emitNoteEvent(detail);
         console.log("[ReCollect] 已自动采集:", noteId, detail.title || "(无标题)");
       } catch (e) { console.log("[ReCollect][passive] 采集异常:", e); }
     }, 1200);
@@ -473,4 +532,7 @@
     setTimeout(() => obs.disconnect(), 60000);
   }
   ensureObserver();
+
+  // Browser Event Collector：初始化收藏按钮监听（Phase 1）
+  initCollectListener();
 })();
