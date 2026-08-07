@@ -1,40 +1,58 @@
 /**
- * API Provider Spike v2 —— 最小技术验证（仅验证，不开发生产功能）
+ * API Provider Spike v3 —— 自动扫描 + 捕获重放（仅验证，不开发生产功能）
  *
- * 原理：小红书 PC 端 feed 请求走 XHR（XMLHttpRequest），x-s/x-t 签名
- *       由页面 JS 自动生成且【绑定具体 URL + 时间戳】。
- *       本脚本 hook XHR 捕获真实请求头，然后立即重放给其他 note_id，
- *       验证【签名是否能跨 note_id 复用】——这是 API 路线的核心问题。
+ * 真实产品链路验证：
+ *   收藏页 DOM
+ *   → 自动扫描取 5 个 note_id（复用 content.js 已验证的选择器逻辑）
+ *   → 打开一篇笔记触发页面真实 feed 请求 → 捕获 headers（x-s/x-t）
+ *   → 重放 5 个 note_id → 验证 title/content
  *
- * 用法（在 www.xiaohongshu.com 任意页面 F12 Console 粘贴运行）：
- *   1. 粘贴运行 → 自动 hook
- *   2. 正常打开任意一篇笔记（触发页面真实 feed 请求）→ 自动捕获并重放
- *   3. 查看输出：捕获信息 + 每篇重放结果
+ * 用法（小红书【收藏页】F12 Console 粘贴运行）：
+ *   1. 粘贴运行 → 自动扫描当前收藏页 → 自动 hook XHR
+ *   2. 正常打开任意一篇笔记（触发真实 feed 请求）→ 自动重放
+ *   3. 查看输出
  *
- * 安全：不打印 cookie 原文（打码），仅本地验证。
+ * 不修改 content.js / 采集主流程；仅 spike 自带最小扫描。
  */
-// ============================================================
-// 测试队列：填入你收藏扫描得到的 note_id（替换为真实值）
-// 来源：插件 Console 日志 [ReCollect][scan-item] id= 复制
-// ============================================================
-window.__SPIKE_TEST_IDS = [
-  "6a71329d000000003301a20d", // ← 替换为你的真实 note_id（5 篇以内）
-  "6a71d82c000000000801359c",
-  "6a72bb4500000000320201ae",
-];
-
 (() => {
   "use strict";
 
   const FEED_URL_PATTERN = "/api/sns/web/v1/feed";
-  const TEST_NOTE_IDS = window.__SPIKE_TEST_IDS || []; // 由 TEST_IDS 注入
+  const MAX_NOTES = 5;
 
-  let captured = null; // {url, headers, query}
+  // ============================================================
+  // 1. 自动扫描收藏页 DOM，取 note_id（复用 content.js 选择器逻辑）
+  // ============================================================
+  function scanNotesFromDOM() {
+    const notes = [];
+    const links = document.querySelectorAll('a[href*="/explore/"], a[href*="/discovery/item/"]');
+    for (const a of links) {
+      const href = a.getAttribute("href") || "";
+      const m = href.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
+      if (!m) continue;
+      const noteId = m[2];
+      if (notes.some((n) => n.note_id === noteId)) continue;
+      const titleEl = a.querySelector(".title") || a.querySelector(".footer .title") || a.querySelector("span.title");
+      notes.push({ note_id: noteId, title: titleEl ? titleEl.textContent.trim() : "" });
+      if (notes.length >= MAX_NOTES) break;
+    }
+    return notes;
+  }
+
+  const scanned = scanNotesFromDOM();
+  console.log(`[Spike] 自动扫描收藏页 → 获取 ${scanned.length} 个 note_id`);
+  scanned.forEach((n, i) => console.log(`[Spike]   #${i + 1} ${n.note_id} | ${n.title.slice(0, 20) || "(无标题)"}`));
+  if (scanned.length < 3) {
+    console.log("[Spike] ⚠️ 扫描不足 3 篇（页面未滚到更多卡片）。可先向下滚动收藏页再重跑本脚本。");
+  }
+  const TEST_NOTE_IDS = scanned.map((n) => n.note_id);
+
+  // ============================================================
+  // 2. Hook XHR，捕获页面真实 feed 请求头
+  // ============================================================
+  let captured = null;
   let replayStarted = false;
 
-  // ============================================================
-  // 1. Hook XHR，捕获页面真实 feed 请求（小红书 PC 端用 XHR）
-  // ============================================================
   const origOpen = XMLHttpRequest.prototype.open;
   const origSend = XMLHttpRequest.prototype.send;
   const origSetHeader = XMLHttpRequest.prototype.setRequestHeader;
@@ -50,23 +68,14 @@ window.__SPIKE_TEST_IDS = [
     if (url.includes(FEED_URL_PATTERN)) {
       try {
         const headers = this.__rc_headers || {};
-        captured = {
-          url,
-          headers,
-          method: this.__rc_method,
-          at: Date.now(),
-        };
-        console.log(
-          "[Spike] ✅ 已捕获页面真实 feed 请求:",
-          "\n  URL:", url.slice(0, 120),
-          "\n  headers:", Object.keys(headers),
-          "\n  cookie:", headers.cookie || headers.Cookie ? "有(浏览器自动)" : "无",
-          "\n  含 x-s:", !!(headers["x-s"] || headers["X-S"]),
-          "\n  含 x-t:", !!(headers["x-t"] || headers["X-T"]),
-          "\n  含 xsec_token:", /xsec_token=/.test(url),
-        );
-        // 捕获后立即重放（签名绑定时间戳，越快越好）
-        setTimeout(tryReplay, 100);
+        captured = { url, headers, method: this.__rc_method, at: Date.now() };
+        console.log("[Spike] ✅ 已捕获页面真实 feed 请求:");
+        console.log("[Spike]   URL:", url.slice(0, 140));
+        console.log("[Spike]   headers:", Object.keys(headers));
+        console.log("[Spike]   cookie:", headers.cookie || headers.Cookie ? "有(浏览器自动)" : "无");
+        console.log("[Spike]   含 x-s:", !!(headers["x-s"] || headers["X-S"]), "| x-t:", !!(headers["x-t"] || headers["X-T"]));
+        console.log("[Spike]   URL 含 xsec_token:", /xsec_token=/.test(url));
+        setTimeout(tryReplay, 100); // 立即重放（签名绑定时间戳）
       } catch (e) {
         console.log("[Spike] 捕获异常:", e.message);
       }
@@ -81,21 +90,20 @@ window.__SPIKE_TEST_IDS = [
   };
 
   // ============================================================
-  // 2. 用捕获的 headers 重放给测试队列（fetch，同源自动带 cookie）
+  // 3. 重放 5 个 note_id
   // ============================================================
   async function tryReplay() {
     if (replayStarted || !captured || !TEST_NOTE_IDS.length) return;
     replayStarted = true;
-    console.log(`[Spike] 开始重放 ${TEST_NOTE_IDS.length} 篇 note_id...`);
+    console.log(`[Spike] 开始重放 ${TEST_NOTE_IDS.length} 篇...`);
 
     let success = 0, fail = 0;
     for (const noteId of TEST_NOTE_IDS) {
-      // 构造新 URL（换 note_id，保留 xsec_token 参数结构）
       const url = `https://www.xiaohongshu.com/api/sns/web/v1/feed?source=web_explore_feed&note_id=${noteId}`;
       const headers = {};
       for (const [k, v] of Object.entries(captured.headers)) {
-        if (/^cookie$/i.test(k)) continue; // cookie 浏览器自动带
-        if (/^(referer|origin)$/i.test(k)) continue; // 同源自动
+        if (/^cookie$/i.test(k)) continue;
+        if (/^(referer|origin)$/i.test(k)) continue;
         headers[k] = v;
       }
       try {
@@ -128,12 +136,11 @@ window.__SPIKE_TEST_IDS = [
       success >= 3
         ? "→ 签名可跨 note_id 复用，API Provider 可行"
         : success > 0
-        ? "→ 部分成功（可能需按 note_id 重新签名），API 不可靠"
+        ? "→ 部分成功（签名不可靠复用），API 不可靠"
         : "→ 签名绑定 URL/时间戳，跨 note_id 复用失败 → API 路线不成立"
     );
     console.log("=".repeat(56));
   }
 
-  console.log("[Spike] v2 已就绪。请【正常打开任意一篇笔记】触发真实 feed 请求...");
-  console.log(`[Spike] 测试队列 ${TEST_NOTE_IDS.length} 篇`);
+  console.log("[Spike] v3 已就绪。请【正常打开任意一篇笔记】触发真实 feed 请求...");
 })();
