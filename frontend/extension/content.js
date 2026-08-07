@@ -216,16 +216,26 @@
       })();
       return true; // 异步响应
     }
-    // 详情页采集：当前页是笔记详情 → 提取正文/图片/作者
+    // 详情页采集：当前页必须是 /explore/{note_id} 笔记详情页
     if (msg && msg.type === "RECOLLECT_DETAIL") {
       try {
+        const isDetail = /^\/(explore|discovery\/item)\/[0-9a-zA-Z]+/.test(location.pathname);
+        console.log("[ReCollect][detail] RECOLLECT_DETAIL 收到，pathname=", location.pathname, "isDetail=", isDetail);
+        if (!isDetail) {
+          sendResponse({
+            ok: true,
+            isDetail: false,
+            detail: null,
+            message: `当前页面不是笔记详情页（pathname=${location.pathname}），请打开一条笔记（URL 形如 /explore/xxx）后再试`,
+          });
+          return;
+        }
         const detail = extractDetailFromDOM();
-        const isDetail = /\/(explore|discovery\/item)\//.test(location.pathname);
         sendResponse({
           ok: true,
-          isDetail,
+          isDetail: true,
           detail,
-          message: isDetail ? "" : "当前页面不是笔记详情页，请打开一条笔记后再试",
+          message: "",
         });
       } catch (e) {
         sendResponse({ ok: false, error: String(e) });
@@ -280,19 +290,29 @@
   let lastCollectedNoteId = "";
   let collectTimer = null;
 
+  // 严格判断：仅 /explore/{note_id} 或 /discovery/item/{note_id} 笔记详情页
   function isDetailPath(pathname) {
-    return /\/(explore|discovery\/item)\/[0-9a-zA-Z]+/.test(pathname);
+    return /^\/(explore|discovery\/item)\/[0-9a-zA-Z]+/.test(pathname);
+  }
+
+  // 页面类型诊断（日志用）
+  function pageTypeLabel(pathname) {
+    if (isDetailPath(pathname)) return "DETAIL(笔记详情)";
+    if (/^\/board\//.test(pathname)) return "BOARD(收藏夹)";
+    if (/^\/user\/profile\//.test(pathname)) return "PROFILE(个人主页)";
+    return "OTHER";
   }
 
   function getCurrentNoteId() {
-    const m = location.pathname.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
+    const m = location.pathname.match(/^\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
     return m ? m[2] : "";
   }
 
   // 详情页内容稳定后自动采集（等待 1.2s 让 SPA 渲染完成）
   function autoCollectIfDetail() {
+    const type = pageTypeLabel(location.pathname);
     if (!isDetailPath(location.pathname)) {
-      console.log("[ReCollect][passive] 非详情页，跳过:", location.pathname);
+      console.log(`[ReCollect][passive] 非笔记详情页，跳过: ${location.pathname} (类型=${type})`);
       return;
     }
     const noteId = getCurrentNoteId();
@@ -339,15 +359,21 @@
   function ensureObserver() {
     if (observerStarted) return;
     observerStarted = true;
+    let lastCheck = 0;
     const obs = new MutationObserver(() => {
-      // 详情正文节点已出现 → 触发采集（带防抖）
+      // 只在笔记详情页（/explore/{id}）时才查节点，避免 /board 等页面误触发
+      if (!isDetailPath(location.pathname)) return;
+      // 防抖：1s 内只检查一次
+      const now = Date.now();
+      if (now - lastCheck < 1000) return;
+      lastCheck = now;
       if (document.querySelector(DETAIL_CONTENT_SEL)) {
         autoCollectIfDetail();
       }
     });
     obs.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
-    // 观察 30s 后自动断开（避免常驻开销）
-    setTimeout(() => obs.disconnect(), 30000);
+    // 观察 60s 后自动断开（避免常驻开销，60s 足够页面渲染完成）
+    setTimeout(() => obs.disconnect(), 60000);
   }
   ensureObserver();
 })();
