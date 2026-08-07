@@ -98,7 +98,7 @@
   }
 
   // 打开详情页并采集（失败返回 {error}）
-  async function collectDetail(note, tabId) {
+  async function collectDetail(note, tabId, attempt = 1) {
     const cleanUrl = note.url.split("?")[0];
     try {
       await chrome.tabs.update(tabId, { url: cleanUrl, active: true });
@@ -107,8 +107,8 @@
     }
     const loaded = await waitTabComplete(tabId, 15000);
     if (!loaded) return { error: "页面加载超时（15s）" };
-    // 等待渲染（降速防风控）
-    await new Promise((r) => setTimeout(r, 3000));
+    // 等待渲染（降速防风控：首采 4s，重试 6s）
+    await new Promise((r) => setTimeout(r, attempt === 1 ? 4000 : 6000));
 
     const trySend = async () => {
       const resp = await chrome.tabs.sendMessage(tabId, { type: "RECOLLECT_DETAIL" });
@@ -123,7 +123,15 @@
     };
 
     try {
-      return await trySend();
+      const d = await trySend();
+      // 风控失败 → 自动重试一次（等更久，可能解除风控）
+      if (d && d.error && d.error.includes("风控") && attempt === 1) {
+        console.log("[ReCollect][sync] 风控拦截，8s 后重试:", note.note_id);
+        await new Promise((r) => setTimeout(r, 8000));
+        const retry = await trySend();
+        return retry && retry.error ? retry : retry;
+      }
+      return d;
     } catch (_) {
       // content script 未注入 → 注入后重试
       try {
@@ -222,10 +230,13 @@
           failed: state.failed,
           current: rec.note_id,
         });
+        console.log(
+          `[ReCollect][sync] ${state.completed}/${state.total} | 成功${state.success} 失败${state.failed} | ${rec.note_id}`
+        );
 
-        // 限流：3-5s 随机间隔（防触发风控），最后一条不用等
+        // 限流：8-12s 随机间隔（防风控关键参数；宁慢勿触发扫码），最后一条不用等
         if (i < toCollect.length - 1) {
-          await new Promise((r) => setTimeout(r, 3000 + Math.floor(Math.random() * 2000)));
+          await new Promise((r) => setTimeout(r, 8000 + Math.floor(Math.random() * 4000)));
         }
       }
 

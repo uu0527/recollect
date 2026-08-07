@@ -67,6 +67,9 @@
         cover,
         collected_at: new Date().toISOString(),
       });
+      console.log(
+        `[ReCollect][scan-item] id=${noteId} | title="${title.slice(0, 24)}" | author=${author} | likes=${likes} | cover=${cover ? "Y" : "N"}`
+      );
     }
     return notes;
   }
