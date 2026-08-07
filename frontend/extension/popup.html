@@ -3,45 +3,89 @@
 <head>
   <meta charset="UTF-8" />
   <style>
-    body { width: 340px; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; padding: 14px; margin: 0; }
-    h1 { font-size: 15px; margin: 0 0 2px; }
-    .sub { font-size: 11.5px; color: #888; margin-bottom: 12px; }
-    .btn { width: 100%; padding: 9px 0; margin: 4px 0; border: none; border-radius: 8px;
-           background: #378ADD; color: #fff; font-size: 13px; cursor: pointer; }
-    .btn:hover { background: #185FA5; }
-    .btn.secondary { background: #eee; color: #333; }
-    .btn.danger { background: #F1EFE8; color: #5F5E5A; }
-    .btn:disabled { background: #ccc; cursor: not-allowed; }
-    .status { font-size: 12px; margin-top: 8px; min-height: 16px; color: #333; white-space: pre-line; }
-    .status.ok { color: #1D9E75; }
-    .status.err { color: #E24B4A; }
-    .stats { font-size: 12px; background: #FAFAF8; border: 1px solid #E8E8E3; border-radius: 8px;
-             padding: 10px 12px; margin-top: 8px; display: none; line-height: 1.7; }
-    .stats.show { display: block; }
-    .stats b { font-weight: 600; }
-    .stats .ok-num { color: #1D9E75; }
-    .stats .fail-num { color: #E24B4A; }
-    .sep { border: none; border-top: 1px solid #E8E8E3; margin: 10px 0; }
-    input { width: calc(100% - 16px); padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px;
-            font-size: 12px; margin: 4px 0; }
-    label { font-size: 12px; color: #555; }
-    .hint { font-size: 11px; color: #1D9E75; background: #E1F5EE; border-radius: 5px; padding: 5px 8px; margin: 4px 0; text-align: center; }
+    :root {
+      --bg: #FFFFFF;
+      --text: #1A1A1A;
+      --text-2: #66665E;
+      --text-3: #9B9B92;
+      --border: #E8E8E3;
+      --accent: #378ADD;
+      --accent-hover: #185FA5;
+      --ok: #1D9E75;
+      --err: #E24B4A;
+      --warn: #BA7517;
+      --radius: 10px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 340px;
+      font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text); padding: 16px;
+    }
+    .header { margin-bottom: 14px; }
+    .header h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+    .header .sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+    .btn {
+      width: 100%; padding: 11px 0; margin: 6px 0; border: none; border-radius: var(--radius);
+      font-size: 13.5px; cursor: pointer; transition: background .15s, opacity .15s;
+      font-family: inherit;
+    }
+    .btn.primary { background: var(--accent); color: #fff; font-weight: 500; }
+    .btn.primary:hover { background: var(--accent-hover); }
+    .btn.secondary { background: #F5F5F2; color: var(--text); }
+    .btn.secondary:hover { background: #EBEBE6; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+    .status-card {
+      background: #FAFAF8; border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 14px; margin-top: 10px; font-size: 12.5px; line-height: 1.7;
+      color: var(--text-2); display: none; white-space: pre-line;
+    }
+    .status-card.show { display: block; }
+    .status-card.ok { border-color: var(--ok); color: var(--ok); }
+    .status-card.err { border-color: var(--err); color: var(--err); }
+    .status-card .title { font-weight: 600; margin-bottom: 4px; }
+    .stats-line { color: var(--text); }
+    .stats-line b { font-weight: 600; }
+    .num-ok { color: var(--ok); font-weight: 600; }
+    .num-fail { color: var(--err); font-weight: 600; }
+    .fail-reasons { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); color: var(--text-3); font-size: 12px; }
+    .bar { display: flex; gap: 6px; margin-top: 8px; }
+    .bar span { flex: 1; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .bar span i { display: block; height: 100%; background: var(--ok); border-radius: 2px; transition: width .3s; }
+    .footer-status {
+      margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+      font-size: 11.5px; color: var(--text-3); display: flex; justify-content: space-between;
+    }
+    .dev { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+    .dev.show { display: block; }
+    .dev .dev-title { font-size: 10.5px; color: var(--text-3); margin-bottom: 4px; letter-spacing: 0.05em; }
+    .dev .btn { font-size: 12px; padding: 6px 0; margin: 3px 0; background: #F1EFE8; color: #5F5E5A; }
   </style>
 </head>
 <body>
-  <h1>ReCollect 拾遗</h1>
-  <div class="sub">收藏激活助手 · 本地采集</div>
+  <div class="header">
+    <h1 id="appTitle">ReCollect 拾遗</h1>
+    <div class="sub">收藏激活助手 · 本地采集</div>
+  </div>
 
-  <label>任务 ID（文件名前缀）</label>
-  <input id="taskId" type="text" value="xhs_collect" placeholder="如 xhs_20260806" />
-
-  <button id="detailBtn" class="btn">采集当前笔记</button>
-  <button id="syncBtn" class="btn">同步当前收藏列表</button>
+  <button id="detailBtn" class="btn primary">采集当前笔记</button>
+  <button id="syncBtn" class="btn primary">采集收藏列表</button>
   <button id="exportBtn" class="btn secondary" disabled>导出文件</button>
-  <button id="debugBtn" class="btn danger">反馈开发者（DOM 诊断）</button>
+  <button id="feedbackBtn" class="btn secondary">反馈开发者</button>
 
-  <div id="stats" class="stats"></div>
-  <div id="status" class="status"></div>
+  <div id="statusCard" class="status-card"></div>
+
+  <div class="footer-status">
+    <span id="footerLeft">已采集 0 篇</span>
+    <span id="footerRight">成功 0 · 失败 0</span>
+  </div>
+
+  <div id="dev" class="dev">
+    <div class="dev-title">开发者选项</div>
+    <button id="debugBtn">页面结构诊断</button>
+    <button id="clearBtn">清空已采集记录</button>
+  </div>
 
   <script src="popup.js"></script>
 </body>

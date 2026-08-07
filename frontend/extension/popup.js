@@ -1,38 +1,43 @@
-// ReCollect 拾遗 - Popup 逻辑
-// 四入口：采集当前笔记 / 同步收藏列表 / 导出文件 / 反馈开发者
+// ReCollect 拾遗 - Popup 逻辑（产品化 UI）
+// 四入口：采集当前笔记 / 采集收藏列表 / 导出文件 / 反馈开发者
+// 开发者选项（页面结构诊断/清空记录）默认隐藏，连点标题 5 次开启
 (() => {
   "use strict";
 
+  const titleEl = document.getElementById("appTitle");
   const detailBtn = document.getElementById("detailBtn");
   const syncBtn = document.getElementById("syncBtn");
   const exportBtn = document.getElementById("exportBtn");
+  const feedbackBtn = document.getElementById("feedbackBtn");
   const debugBtn = document.getElementById("debugBtn");
-  const statusEl = document.getElementById("status");
-  const statsEl = document.getElementById("stats");
-  const taskIdInput = document.getElementById("taskId");
+  const clearBtn = document.getElementById("clearBtn");
+  const devEl = document.getElementById("dev");
+  const statusCard = document.getElementById("statusCard");
+  const footerLeft = document.getElementById("footerLeft");
+  const footerRight = document.getElementById("footerRight");
 
+  const DEV_FLAG = "recollect_dev_mode";
   let syncing = false;
 
-  function setStatus(text, cls) {
-    statusEl.textContent = text;
-    statusEl.className = "status " + (cls || "");
+  // ============================================================
+  // 工具
+  // ============================================================
+  function showCard(text, cls, title) {
+    statusCard.innerHTML = title ? `<div class="title">${title}</div>${text}` : text;
+    statusCard.className = "status-card show" + (cls ? " " + cls : "");
   }
-
-  function showStats(html) {
-    statsEl.innerHTML = html;
-    statsEl.classList.add("show");
+  function hideCard() { statusCard.className = "status-card"; }
+  function updateFooter(records) {
+    const s = records.filter((r) => r.status === "SUCCESS").length;
+    const p = records.filter((r) => r.status === "PENDING").length;
+    const f = records.filter((r) => r.status === "FAILED").length;
+    footerLeft.textContent = `已采集 ${s + p + f} 篇`;
+    footerRight.innerHTML = `成功 <span class="num-ok">${s}</span> · 失败 <span class="num-fail">${f}</span>`;
   }
-
-  function hideStats() {
-    statsEl.classList.remove("show");
-  }
-
   async function getActiveTab() {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     return tabs[0];
   }
-
-  // sendMessage 失败 → 自动注入 content script 后重试
   async function sendToTab(tabId, msg) {
     try {
       return await chrome.tabs.sendMessage(tabId, msg);
@@ -43,131 +48,158 @@
       return await chrome.tabs.sendMessage(tabId, msg);
     }
   }
+  function fmtDuration(sec) {
+    const s = Math.round(Number(sec) || 0);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+    if (h > 0) return `${h}小时${m}分${r}秒`;
+    if (m > 0) return `${m}分${r}秒`;
+    return `${r}秒`;
+  }
 
   // ============================================================
-  // 采集当前笔记（仅 /explore/{id} 有效）
+  // 开发者模式：连点标题 5 次开启
+  // ============================================================
+  let clickCount = 0, clickTimer = null;
+  titleEl.addEventListener("click", () => {
+    clickCount += 1;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
+    if (clickCount >= 5) {
+      clickCount = 0;
+      chrome.storage.local.set({ [DEV_FLAG]: true });
+      devEl.classList.add("show");
+      showCard("开发者选项已开启", "ok", "开发模式");
+    }
+  });
+
+  // ============================================================
+  // 采集当前笔记（仅 /explore/* 详情页）
   // ============================================================
   detailBtn.addEventListener("click", async () => {
-    setStatus("采集中...");
+    showCard("正在采集…", "", "采集当前笔记");
     detailBtn.disabled = true;
     try {
       const tab = await getActiveTab();
       if (!tab || !tab.url || !tab.url.includes("xiaohongshu.com")) {
-        setStatus("请先打开一条小红书笔记", "err");
+        showCard("请先打开小红书网页", "err", "无法采集");
         return;
       }
       const resp = await sendToTab(tab.id, { type: "RECOLLECT_DETAIL" });
       if (resp && resp.ok && resp.isDetail && resp.detail) {
         const d = resp.detail;
-        // 更新记录表
-        const upd = await chrome.runtime.sendMessage({
-          type: "RECOLLECT_AUTO_DETAIL",
-          detail: d,
-        });
-        const statusText = (upd && upd.updated) ? "已更新记录" : "已采集（记录已存在完整版）";
-        setStatus(`采集成功：${d.title || d.note_id}\n正文 ${d.content.length} 字，${d.images.length} 图，作者 ${d.author || "-"} ${statusText}`, "ok");
+        await chrome.runtime.sendMessage({ type: "RECOLLECT_AUTO_DETAIL", detail: d });
+        showCard(
+          `标题：${d.title || "（无标题）"}\n正文 ${d.content.length} 字 · 图片 ${d.images.length} 张\n作者：${d.author || "未知"}\n已保存到本地记录`,
+          "ok", "采集完成"
+        );
       } else if (resp && resp.ok) {
-        setStatus(resp.message || "当前页不是笔记详情页", "err");
+        showCard("请先打开一篇笔记的详情页（点击任意一篇笔记）", "err", "当前不是笔记详情页");
       } else {
-        setStatus("采集失败：" + (resp && resp.error), "err");
+        showCard("采集失败：" + ((resp && resp.error) || "未知错误"), "err", "采集失败");
       }
     } catch (e) {
-      setStatus("无法连接页面：" + e.message, "err");
+      showCard("无法连接页面：" + e.message, "err", "采集失败");
     } finally {
       detailBtn.disabled = false;
     }
   });
 
   // ============================================================
-  // 同步当前收藏列表（扫描 → 自动逐篇采集 → 统计）
+  // 采集收藏列表（扫描 → 自动逐篇采集 → 统计）
   // ============================================================
   syncBtn.addEventListener("click", async () => {
     if (syncing) return;
-    setStatus("正在启动同步...");
+    showCard("正在准备…", "", "采集收藏列表");
     syncBtn.disabled = true;
     exportBtn.disabled = true;
-    hideStats();
     syncing = true;
 
     try {
       const tab = await getActiveTab();
       if (!tab || !tab.url || !tab.url.includes("xiaohongshu.com")) {
-        setStatus("请先打开小红书收藏夹页面（URL 含 /board/）", "err");
+        showCard("请先打开小红书收藏夹页面", "err", "无法采集");
         return;
       }
-      // 当前页面需是收藏夹页
       if (!/\/board\//.test(tab.url)) {
-        setStatus("当前不是收藏夹页面，请打开收藏夹后再同步", "err");
+        showCard("请先打开收藏夹页面（点击左侧「收藏」进入）", "err", "当前不是收藏夹");
         return;
       }
 
       const startResp = await chrome.runtime.sendMessage({ type: "RECOLLECT_SYNC_START" });
       if (!startResp || !startResp.ok) {
-        setStatus("同步启动失败：" + (startResp && startResp.error), "err");
+        showCard("无法开始：" + ((startResp && startResp.error) || "未知错误"), "err", "采集失败");
         return;
       }
 
-      // 轮询进度（每 2s）
       for (let i = 0; i < 600; i++) { // 最多 20 分钟
         await new Promise((r) => setTimeout(r, 2000));
         const st = await chrome.runtime.sendMessage({ type: "RECOLLECT_SYNC_STATUS" });
         if (!st) continue;
-
         if (st.running) {
-          setStatus(`同步中 ${st.completed}/${st.total}…\n成功 ${st.success} | 失败 ${st.failed} | 收藏夹: ${st.boardName || "-"}`);
+          const done = st.completed || 0, total = st.total || 0;
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+          showCard(
+            `已处理 ${done}/${total} 篇（${pct}%）\n成功 ${st.success || 0} · 失败 ${st.failed || 0}\n请保持弹窗打开`,
+            "", "正在采集收藏列表"
+          );
           continue;
         }
-
         // 完成
-        const elapsed = st.elapsedSec || "?";
-        const rate = st.total > 0 ? Math.round((st.success / st.total) * 100) : 0;
-        showStats(`
-          <b>收藏夹</b>：${st.boardName || "未识别"}<br>
-          <b>发现笔记</b>：${st.total} 条<br>
-          <b>成功采集</b>：<span class="ok-num">${st.success}</span> 条<br>
-          <b>失败</b>：<span class="fail-num">${st.failed}</span> 条<br>
-          <b>成功率</b>：${rate}%<br>
-          <b>总耗时</b>：${elapsed}s
-        `);
-        // 失败原因
-        const reasons = st.failReasons || {};
-        const reasonSet = {};
-        Object.values(reasons).forEach((r) => { reasonSet[r] = (reasonSet[r] || 0) + 1; });
-        const reasonText = Object.entries(reasonSet)
-          .map(([r, c]) => `  · ${r}（${c}条）`).join("\n");
-        setStatus(
-          `同步完成\n成功 ${st.success} / ${st.total}（成功率 ${rate}%）` +
-          (reasonText ? `\n失败原因：\n${reasonText}` : ""),
-          st.failed > 0 ? "err" : "ok"
-        );
-        exportBtn.disabled = false;
+        renderSyncResult(st);
         break;
       }
     } catch (e) {
-      setStatus("同步异常：" + e.message, "err");
+      showCard("采集异常：" + e.message, "err", "采集失败");
     } finally {
       syncing = false;
       syncBtn.disabled = false;
     }
   });
 
+  function renderSyncResult(st) {
+    const total = st.total || 0;
+    const success = st.success || 0;
+    const failed = st.failed || 0;
+    const rate = total > 0 ? Math.round((success / total) * 100) : 0;
+    const elapsed = fmtDuration(st.elapsedSec);
+
+    // 失败原因归类
+    const reasons = st.failReasons || {};
+    const reasonSet = {};
+    Object.values(reasons).forEach((r) => { reasonSet[r] = (reasonSet[r] || 0) + 1; });
+    const reasonLines = Object.entries(reasonSet)
+      .map(([r, c]) => `· ${r}（${c} 篇）`).join("\n");
+
+    showCard(
+      `当前收藏夹：${st.boardName || "未识别"}\n发现笔记 ${total} 篇\n成功采集 <span class="num-ok">${success}</span> 篇\n失败 <span class="num-fail">${failed}</span> 篇\n成功率 ${rate}%\n耗时 ${elapsed}` +
+      (reasonLines ? `\n\n失败原因：\n${reasonLines}` : ""),
+      failed > 0 ? "err" : "ok",
+      "收藏列表采集完成"
+    );
+    exportBtn.disabled = success === 0;
+    refreshRecords();
+  }
+
   // ============================================================
-  // 导出文件（只导出 SUCCESS 完整记录）
+  // 导出文件（仅导出完整记录）
   // ============================================================
   exportBtn.addEventListener("click", async () => {
-    setStatus("导出中...");
+    showCard("正在导出…", "", "导出文件");
     exportBtn.disabled = true;
     try {
       const resp = await chrome.runtime.sendMessage({ type: "RECOLLECT_RECORD_LIST" });
-      if (!resp || !resp.ok) { setStatus("读取记录失败", "err"); return; }
+      if (!resp || !resp.ok) { showCard("读取记录失败", "err", "导出失败"); return; }
 
       const records = resp.records || [];
       const complete = records.filter((r) => r.status === "SUCCESS" && r.content);
-      const pending = records.filter((r) => r.status === "PENDING");
-      const failed = records.filter((r) => r.status === "FAILED");
+      const pending = records.filter((r) => r.status === "PENDING").length;
+      const failed = records.filter((r) => r.status === "FAILED").length;
 
       if (!complete.length) {
-        setStatus(`没有可导出的完整记录（待采集 ${pending.length}，失败 ${failed.length}）。\n请先「同步当前收藏列表」或浏览笔记补全。`, "err");
+        showCard(
+          `暂无可导出的内容（待采集 ${pending} 篇，失败 ${failed} 篇）\n请先「采集收藏列表」或浏览笔记补全`,
+          "err", "没有可导出的内容"
+        );
         return;
       }
 
@@ -188,8 +220,7 @@
         }))
         .join("\n");
 
-      const taskId = taskIdInput.value.trim() || "recollect";
-      const filename = `${taskId}_notes.jsonl`;
+      const filename = `recollect_${Date.now()}_notes.jsonl`;
       const blob = new Blob([jsonl], { type: "application/x-ndjson" });
       const url = URL.createObjectURL(blob);
       chrome.downloads.download(
@@ -197,63 +228,113 @@
         () => {
           setTimeout(() => URL.revokeObjectURL(url), 5000);
           if (chrome.runtime.lastError) {
-            setStatus("导出失败：" + chrome.runtime.lastError.message, "err");
+            showCard("导出失败：" + chrome.runtime.lastError.message, "err", "导出失败");
           } else {
-            setStatus(`已导出 ${complete.length} 条完整记录 → ${filename}\n（未导出：待采集 ${pending.length}，失败 ${failed.length}）`, "ok");
+            showCard(
+              `已导出 ${complete.length} 篇完整内容 → ${filename}\n（未导出：待采集 ${pending} 篇，失败 ${failed} 篇）`,
+              "ok", "导出完成"
+            );
           }
         }
       );
     } catch (e) {
-      setStatus("导出失败：" + e.message, "err");
+      showCard("导出失败：" + e.message, "err", "导出失败");
     } finally {
       exportBtn.disabled = false;
     }
   });
 
   // ============================================================
-  // 反馈开发者（DOM 诊断复制到剪贴板）
+  // 反馈开发者（自动生成诊断信息 → 一键复制）
+  // ============================================================
+  feedbackBtn.addEventListener("click", async () => {
+    showCard("正在生成反馈信息…", "", "反馈开发者");
+    try {
+      const tab = await getActiveTab();
+      const manifest = chrome.runtime.getManifest();
+      const ua = navigator.userAgent;
+      const chromeVer = (ua.match(/Chrome\/([\d.]+)/) || [])[1] || "未知";
+
+      // 采集统计 + 最近失败原因
+      let statsText = "暂无采集记录";
+      let failText = "无";
+      try {
+        const resp = await chrome.runtime.sendMessage({ type: "RECOLLECT_RECORD_LIST" });
+        if (resp && resp.ok) {
+          const records = resp.records || [];
+          const s = records.filter((r) => r.status === "SUCCESS").length;
+          const f = records.filter((r) => r.status === "FAILED");
+          statsText = `共 ${records.length} 篇（成功 ${s}，失败 ${f.length}）`;
+          const reasonSet = {};
+          f.forEach((r) => { reasonSet[r.fail_reason || "未知"] = (reasonSet[r.fail_reason] || 0) + 1; });
+          failText = Object.entries(reasonSet).map(([r, c]) => `${r}×${c}`).join("；") || "无";
+        }
+      } catch (_) {}
+
+      const feedback = [
+        `ReCollect 插件版本：v${manifest.version}`,
+        `Chrome 版本：${chromeVer}`,
+        `当前页面：${(tab && tab.url) || "无法获取"}`,
+        `采集统计：${statsText}`,
+        `最近失败原因：${failText}`,
+      ].join("\n");
+
+      try { await navigator.clipboard.writeText(feedback); } catch (_) {}
+      showCard("已复制，请粘贴发给开发者\n\n" + feedback, "ok", "反馈信息已生成");
+    } catch (e) {
+      showCard("生成失败：" + e.message, "err", "反馈开发者");
+    }
+  });
+
+  // ============================================================
+  // 开发者选项
   // ============================================================
   debugBtn.addEventListener("click", async () => {
-    setStatus("诊断中...");
-    debugBtn.disabled = true;
+    showCard("正在生成页面结构诊断…", "", "页面结构诊断");
     try {
       const tab = await getActiveTab();
       if (!tab || !tab.url || !tab.url.includes("xiaohongshu.com")) {
-        setStatus("请先打开小红书页面", "err");
+        showCard("请先打开小红书页面", "err");
         return;
       }
       const resp = await sendToTab(tab.id, { type: "RECOLLECT_DEBUG" });
       if (resp && resp.ok) {
         const text = JSON.stringify(resp.dump, null, 2);
         try { await navigator.clipboard.writeText(text); } catch (_) {}
-        setStatus("已复制 DOM 诊断到剪贴板，请发给开发者", "ok");
+        showCard("已复制到剪贴板，请发给开发者", "ok", "诊断信息已生成");
       } else {
-        setStatus("诊断失败：" + (resp && resp.error), "err");
+        showCard("诊断失败：" + ((resp && resp.error) || "未知"), "err");
       }
     } catch (e) {
-      setStatus("无法连接页面：" + e.message, "err");
-    } finally {
-      debugBtn.disabled = false;
+      showCard("无法连接页面：" + e.message, "err");
     }
   });
 
-  // 打开弹窗时展示当前记录统计
-  (async () => {
-    try {
+  clearBtn.addEventListener("click", async () => {
+    try { await chrome.runtime.sendMessage({ type: "RECOLLECT_RECORD_CLEAR" }); } catch (_) {}
+    hideCard();
+    updateFooter([]);
+    showCard("已清空本地采集记录", "ok", "已清空");
+  });
+
+  // ============================================================
+  // 初始化：状态栏 + 开发模式显隐
+  // ============================================================
+  async function refreshRecords() {    try {
       const resp = await chrome.runtime.sendMessage({ type: "RECOLLECT_RECORD_LIST" });
       if (resp && resp.ok) {
         const records = resp.records || [];
+        updateFooter(records);
         const s = records.filter((r) => r.status === "SUCCESS").length;
-        const p = records.filter((r) => r.status === "PENDING").length;
-        const f = records.filter((r) => r.status === "FAILED").length;
-        if (records.length > 0) {
-          showStats(`
-            <b>本地记录</b>：共 ${records.length} 条<br>
-            <b>已完成</b>：<span class="ok-num">${s}</span> | <b>待采集</b>：${p} | <b>失败</b>：<span class="fail-num">${f}</span>
-          `);
-          exportBtn.disabled = s === 0;
-        }
+        if (s > 0) exportBtn.disabled = false;
       }
     } catch (_) {}
+  }
+
+  (async () => {    try {
+      const d = await chrome.storage.local.get(DEV_FLAG);
+      if (d[DEV_FLAG]) devEl.classList.add("show");
+    } catch (_) {}
+    refreshRecords();
   })();
 })();
