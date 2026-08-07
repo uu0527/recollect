@@ -210,6 +210,11 @@
           title: n.title || `[ReCollect] ${n.url}`,
           content: n.content || "",
           images: n.images || [],
+          // Data Contract: 显式状态字段（SUCCESS 导出，FAILED 不导出）
+          status: "SUCCESS",
+          failure_reason: "",
+          // 收藏夹名顶层映射（保留 metadata.board_name 兼容）
+          favorite_folder: n.board_name || "",
           metadata: {
             source: "xiaohongshu_extension",
             author: n.author || "",
