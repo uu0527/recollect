@@ -268,3 +268,55 @@ RECOLLECT_ROUTER_SCHEDULE=true  # 是否启用时间调度
  input_tokens, output_tokens, estimated_cost_usd, success, error}
 ```
 成本分析：`python -c "from pipeline._llm.usage import get_cost_summary; print(get_cost_summary())"`
+
+---
+
+## 10. 环境配置
+
+### 10.1 快速开始（首次部署）
+
+```bash
+# 1. 复制模板
+cp .env.example .env
+
+# 2. 编辑 .env，填写真实 API Key（.env 已被 gitignore，不会提交）
+
+# 3. 验证配置
+python scripts/check_env.py
+```
+
+### 10.2 .env 结构
+
+| 模块 | 变量 | 说明 |
+|---|---|---|
+| Provider | `RECOLLECT_P2/P3/P5/P6_PROVIDER` | 各阶段模型厂商（mock/deepseek/qwen/zhipu/openai/kimi） |
+| DeepSeek | `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL` | 高质量推理 |
+| Qwen | `QWEN_API_KEY` / `QWEN_MODEL` | DashScope 通用 |
+| Qwen Vision | `DASHSCOPE_API_KEY` / `QWEN_VISION_MODEL` | 视觉专用（qwen3-vl-plus），仅视觉任务触发 |
+| Zhipu | `ZHIPU_API_KEY` / `ZHIPU_MODEL` | 成本优化 + Judge |
+| OpenAI / Kimi | `OPENAI_*` / `KIMI_*` | 预留 |
+| Feishu | `FEISHU_APP_ID` / `FEISHU_APP_SECRET` / `FEISHU_BITABLE_TOKEN` / `FEISHU_BITABLE_TABLE_ID` | P4 写库 |
+
+### 10.3 切换 Provider
+
+改 `.env` 中对应阶段的 `RECOLLECT_P*_PROVIDER` 即可，无需改代码。
+例：P3 从 DeepSeek 切到 Zhipu → `RECOLLECT_P3_PROVIDER=zhipu`。
+
+### 10.4 配置飞书（P4）
+
+1. https://open.feishu.cn → 创建自建应用 →「凭证与基础信息」获取 `FEISHU_APP_ID` / `FEISHU_APP_SECRET`
+2. 创建多维表格 → URL 中 `base_xxx` 为 `FEISHU_BITABLE_TOKEN`，`tblxxx` 为 `FEISHU_BITABLE_TABLE_ID`
+3. 应用开通 `bitable:app` 读写权限并发布版本
+4. 填入 `.env` 四个 FEISHU 变量
+5. `python scripts/check_env.py` 确认 Feishu 全 Configured
+
+> 4 项齐全 → P4 自动真实写库；缺失 → 自动降级 Mock，不影响启动。
+
+### 10.5 环境自检
+
+```bash
+python scripts/check_env.py
+```
+
+输出当前 Provider、各 API 配置状态、Feishu 状态与当前模式，**不打印任何 Key 内容**。
+适合换电脑 / 部署 / 排查问题时快速确认环境。
