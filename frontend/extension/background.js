@@ -25,9 +25,9 @@
   // ============================================================
   // 同步断点持久化（MV3 worker 可能被终止，需可恢复）
   // ============================================================
-  async function saveSyncCheckpoint(queue, index, total) {
+  async function saveSyncCheckpoint(queue, index, total, mode = "collect") {
     await chrome.storage.local.set({
-      [SYNC_STATE_KEY]: { queue, index, total, savedAt: Date.now() },
+      [SYNC_STATE_KEY]: { queue, index, total, mode, savedAt: Date.now() },
     });
   }
 
@@ -172,8 +172,9 @@
 
   // ============================================================
   // 同步收藏夹主流程
+  // mode: "scan"（默认，仅列表页基础数据，不跳详情）| "collect"（扫描+详情补采）
   // ============================================================
-  async function syncBoard(notify) {
+  async function syncBoard(notify, mode = "scan") {
     if (state.running) return { ok: false, error: "同步已在运行" };
     state.running = true;
     state.completed = 0;
@@ -228,7 +229,8 @@
         console.log(`[ReCollect][sync] 检测到断点，从 ${startIndex}/${cp.total} 续跑`);
       }
 
-      // 3) 逐篇采集详情（限流防风控）
+      // 3) 详情补采（仅 mode="collect" 时执行；scan 模式只采基础数据，不跳详情）
+      if (mode === "collect") {
       for (let i = startIndex; i < toCollect.length; i++) {
         const rec = toCollect[i];
         const result = await collectDetail(rec, tab.id);
@@ -258,7 +260,8 @@
         await saveSyncCheckpoint(
           toCollect.map((r) => r.note_id),
           i + 1,
-          toCollect.length
+          toCollect.length,
+          mode
         );
         notify({
           ok: true,
@@ -279,6 +282,7 @@
           await new Promise((r) => setTimeout(r, 8000 + Math.floor(Math.random() * 4000)));
         }
       }
+      } // end if mode=collect
 
       // 3.5) 同步完成，清除断点
       await clearSyncCheckpoint();
@@ -313,14 +317,20 @@
       loadSyncCheckpoint().then((cp) => {
         if (cp && cp.queue && cp.queue.length > 0 && cp.index < cp.total) {
           console.log(`[ReCollect][sync] worker 恢复，自动续跑 ${cp.index}/${cp.total}`);
-          syncBoard(() => {});
+          syncBoard(() => {}, cp.mode || "collect");
         }
       });
     }
 
-    // 启动收藏夹同步
+    // 启动收藏夹扫描（阶段A：仅列表页基础数据，不跳详情）
     if (msg && msg.type === "RECOLLECT_SYNC_START") {
-      syncBoard((p) => {}).then(sendResponse);
+      syncBoard((p) => {}, "scan").then(sendResponse);
+      return true;
+    }
+
+    // 启动详情补采（阶段B：扫描基础上逐篇补详情，限速防风控）
+    if (msg && msg.type === "RECOLLECT_COLLECT_START") {
+      syncBoard((p) => {}, "collect").then(sendResponse);
       return true;
     }
 

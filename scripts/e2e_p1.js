@@ -227,7 +227,7 @@ function detailPageHTML(noteId, i) {
   // note_id → 序号（mock update 用）
   noteIds.forEach((id, i) => { noteIdIndex[id] = i + 1; });
 
-  const startResp = await chrome.runtime.sendMessage({ type: "RECOLLECT_SYNC_START" });
+  const startResp = await chrome.runtime.sendMessage({ type: "RECOLLECT_COLLECT_START" });
   check("C1 同步启动", startResp.ok, JSON.stringify(startResp));
 
   // 轮询状态直到完成（同步含 3-5s 限流，最多等 60s）
@@ -268,6 +268,37 @@ function detailPageHTML(noteId, i) {
   check("E2 JSONL 行数=成功数", lines.length === exportable.length);
   const first = lines.length ? JSON.parse(lines[0]) : null;
   check("E3 字段完整", first && first.note_id && first.title && first.content && first.images && first.metadata.author);
+
+  // ============================================================
+  // F. 阶段A：scan 模式（只扫描基础数据，不跳详情 → 可导出）
+  // ============================================================
+  console.log("== F. scan 模式（列表页基础数据）==");
+  {
+    // 恢复 boardTab 为收藏夹页 DOM
+    boardTab.window.history.replaceState({}, "", "https://www.xiaohongshu.com/board/6920600b0000000013020bc6");
+    boardTab.window.document.body.innerHTML = boardPageHTML("6920600b", noteIds);
+    // 模拟阶段A：扫描（RECOLLECT_SCAN）→ 记录基础数据（走 background mergeScan 同款逻辑）
+    const scanResp = await chrome.tabs.sendMessage(boardTab.id, { type: "RECOLLECT_SCAN", autoScroll: false });
+    check("F1 扫描返回 4 条", scanResp && scanResp.ok && scanResp.count === 4, JSON.stringify(scanResp));
+    // 基础数据记录应含 note_id/url/title/cover（列表页可提取的信息）
+    const n0 = scanResp.notes[0];
+    check("F2 含 note_id/url", n0 && n0.note_id && n0.url);
+    check("F3 含 title", n0 && n0.title.length > 0, JSON.stringify(n0 && n0.title));
+    check("F4 含 cover", n0 && (n0.cover || "").length > 0);
+    // 导出基础数据 JSONL（阶段A 契约：status=PENDING 也可导出）
+    const basicJsonl = scanResp.notes.map((n) => JSON.stringify({
+      note_id: n.note_id, url: n.url, title: n.title, content: n.content || "",
+      images: n.images || [],
+      status: "PENDING",
+      failure_reason: "",
+      favorite_folder: scanResp.boardName || "",
+      metadata: { source: "xiaohongshu_extension", author: n.author || "", likes: n.likes || 0, cover: n.cover || "" },
+    })).join("\n");
+    const bLines = basicJsonl.split("\n").filter((l) => l.trim());
+    check("F5 基础 JSONL 4 行", bLines.length === 4, String(bLines.length));
+    const b0 = JSON.parse(bLines[0]);
+    check("F6 基础记录字段完整", b0.note_id && b0.url && b0.title && b0.status === "PENDING");
+  }
 
   console.log(`\n========== E2E 结果：${pass} 通过 / ${fail} 失败 ==========`);
   process.exit(fail > 0 ? 1 : 0);
