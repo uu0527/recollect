@@ -380,14 +380,23 @@ class TrackedLLMClient(LLMClient):
     # ------------------------------------------------------------
     def _log_usage(self, system: str, user: str, kw: Dict, *,
                    raw: str = "", success: bool, error: str = "") -> None:
-        # 估算 token：按中文字符约 1.5 字/token，英文约 4 字符/token（近似）
-        def _est(text: str) -> int:
-            cn = sum(1 for ch in text if "\u4e00" <= ch <= "\u9fff")
-            other = max(0, len(text) - cn)
-            return int(cn / 1.5 + other / 4) + 4
+        # 优先读 API 真实 usage（provider 层已从 response 提取，
+        # 含图片 token；text 调用同样适用）
+        real = getattr(self._inner, "_last_usage", None)
+        if real and real.get("total_tokens"):
+            input_tokens = int(real["input_tokens"])
+            output_tokens = int(real["output_tokens"])
+            note_extra = "|usage=api_real"
+        else:
+            # fallback：字符估算（provider 未返回 usage 时）
+            def _est(text: str) -> int:
+                cn = sum(1 for ch in text if "\u4e00" <= ch <= "\u9fff")
+                other = max(0, len(text) - cn)
+                return int(cn / 1.5 + other / 4) + 4
 
-        input_tokens = _est(system) + _est(user)
-        output_tokens = _est(raw) if raw else 0
+            input_tokens = _est(system) + _est(user)
+            output_tokens = _est(raw) if raw else 0
+            note_extra = "|usage=estimated"
 
         record_usage(
             provider=self.provider_name,
@@ -399,7 +408,7 @@ class TrackedLLMClient(LLMClient):
             task_type=self.task_type,
             success=success,
             error=error,
-            note=f"level={self.level}|route={self.route_reason}",
+            note=f"level={self.level}|route={self.route_reason}{note_extra}",
         )
 
 

@@ -79,6 +79,8 @@ class OpenAICompatibleClient(LLMClient):
             timeout=float(timeout),
             max_retries=0,  # 重试逻辑由本层统一管理
         )
+        # 最近一次 API 调用的真实 usage（input/output/total tokens）
+        self._last_usage: Dict[str, int] = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
     # ----------------------------------------------------------------
     # 接口实现
@@ -188,6 +190,14 @@ class OpenAICompatibleClient(LLMClient):
                     messages=messages,
                     temperature=temperature,
                 )
+                # 记录真实 usage（含图片 token），供上层成本统计读取
+                u = getattr(resp, "usage", None)
+                if u is not None:
+                    self._last_usage = {
+                        "input_tokens": getattr(u, "prompt_tokens", 0) or 0,
+                        "output_tokens": getattr(u, "completion_tokens", 0) or 0,
+                        "total_tokens": getattr(u, "total_tokens", 0) or 0,
+                    }
                 return resp.choices[0].message.content or ""
             except Exception as exc:
                 last_exc = exc
