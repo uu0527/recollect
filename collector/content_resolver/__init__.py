@@ -27,7 +27,8 @@ from collector.context_store import pending_store  # noqa: E402
 
 
 def _load_view_events(events_dir: Path) -> Dict[str, Dict]:
-    """从 data/events/*.jsonl 收集 note_view 事件（note_id → event）"""
+    """从 data/events/*.jsonl 收集 note_view 事件（note_id → event）
+    统一 UTF-8 读取（errors=replace 容错，防止混入 GBK 文件导致崩溃）"""
     result: Dict[str, Dict] = {}
     if not events_dir.exists():
         return result
@@ -35,7 +36,7 @@ def _load_view_events(events_dir: Path) -> Dict[str, Dict]:
         if f.name.startswith("pending_"):
             continue
         try:
-            with open(f, encoding="utf-8") as fh:
+            with open(f, encoding="utf-8", errors="replace") as fh:
                 for ln in fh:
                     ln = ln.strip()
                     if not ln:
@@ -58,7 +59,7 @@ def _load_existing_raw(out_dir: Path) -> Dict[str, Dict]:
         return result
     for f in sorted(out_dir.glob("*.jsonl")):
         try:
-            with open(f, encoding="utf-8") as fh:
+            with open(f, encoding="utf-8", errors="replace") as fh:
                 for ln in fh:
                     ln = ln.strip()
                     if not ln:
@@ -127,6 +128,9 @@ def resolve_pending(events_dir: Path, out_dir: Path) -> Dict:
                 existing_ids.add(note_id)
             pending_store.update_pending(note_id, "resolved", events_dir)
             resolved += 1
+            # 验证日志：收藏事件与内容事件关联
+            src_note_id = src.get("note_id") or src.get("note_card", {}).get("note_id") or ""
+            print(f"[resolver] note_collect {note_id} -> resolved raw_note_id {src_note_id or note_id} (title={src.get('title', '')[:24]})")
         else:
             no_content += 1  # 保持 pending
 
