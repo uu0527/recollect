@@ -112,56 +112,50 @@
    *   - 作者: .author-wrapper .user-name / .info .user-name
    *   - 标题: #detail-title / .title
    */
-  // 从浮层详情 DOM 提取 note_id（URL 无 note_id 时的兜底）
+  // 从浮层详情 DOM 提取 note_id（仅当确认存在真实详情节点时）
   // 策略优先级：
   //   1. 详情内容节点容器内的 /explore/{id} 链接
-  //   2. 页面所有 /explore/{id} 链接中，DOM 距离详情节点最近的一个
-  //   3. 详情区图片 URL 中的 note_id 片段
+  //   2. 详情区图片 URL 中的 note_id 片段
+  // 注意：不使用列表页兜底（避免 /board/ 收藏夹页误抓列表第一个链接）
+  // 若无法确认详情节点存在，直接返回空。
   function extractNoteIdFromOverlayDOM() {
-    // 详情内容节点（与 extractDetailFromDOM 的选择器保持一致）
+    // 详情内容节点：只用强特征选择器（排除 .desc 等通用 class，
+    // 避免收藏夹页的"暂无简介"被误判为详情内容）
     const contentSel = [
-      "#detail-desc", ".desc", ".note-content", "#detail-content",
-      ".note-text", "#detail-title", ".note-title",
+      "#detail-desc", ".note-content", "#detail-content",
+      ".note-text", "#detail-title",
     ].join(", ");
     const detailNode = document.querySelector(contentSel);
+    if (!detailNode) return "";
+
     const noteIdRe = /\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/;
 
     // 策略 1：详情节点向上找 3 层容器（不越过详情区域），容器内找 explore 链接
-    // 注意：不能到 body/html（会误抓列表页其他卡片链接）
-    if (detailNode) {
-      let node = detailNode;
-      for (let i = 0; i < 3 && node; i++) {
-        // 达到 body/html 即停止（避免全局误匹配列表链接）
-        if (node.tagName === "BODY" || node.tagName === "HTML") break;
-        const links = node.querySelectorAll('a[href*="/explore/"], a[href*="/discovery/item/"]');
-        for (const a of links) {
-          const mm = (a.getAttribute("href") || "").match(noteIdRe);
-          if (mm) return mm[2];
-        }
-        node = node.parentElement;
+    let node = detailNode;
+    for (let i = 0; i < 3 && node; i++) {
+      // 达到 body/html 即停止（避免全局误匹配列表链接）
+      if (node.tagName === "BODY" || node.tagName === "HTML") break;
+      const links = node.querySelectorAll('a[href*="/explore/"], a[href*="/discovery/item/"]');
+      for (const a of links) {
+        const mm = (a.getAttribute("href") || "").match(noteIdRe);
+        if (mm) return mm[2];
       }
-      // 策略 3：详情区域图片 URL 可能含 note_id（形如 sns-img/noteId_xxx）
-      // 图片通常在详情容器（非正文节点子树），从详情节点向上 3 层的容器内找
-      let imgScope = detailNode;
-      for (let i = 0; i < 3 && imgScope; i++) {
-        if (imgScope.tagName === "BODY" || imgScope.tagName === "HTML") break;
-        const imgs = imgScope.querySelectorAll("img");
-        for (const img of imgs) {
-          const src = img.getAttribute("src") || img.getAttribute("data-src") || "";
-          const im = src.match(/\/([0-9a-zA-Z]{20,})(?:[._/]|$)/);
-          if (im) return im[1].split("_")[0];
-        }
-        imgScope = imgScope.parentElement;
-      }
+      node = node.parentElement;
     }
 
-    // 策略 2：页面所有 explore 链接，取第一个（列表页兜底；浮层打开时
-    // 列表仍在 DOM，通常列表首条即浮层对应条目——不保证，但优于空）
-    const allLinks = document.querySelectorAll('a[href*="/explore/"], a[href*="/discovery/item/"]');
-    for (const a of allLinks) {
-      const mm = (a.getAttribute("href") || "").match(noteIdRe);
-      if (mm) return mm[2];
+    // 策略 2：详情区域图片 URL 可能含 note_id（形如 sns-img/noteId_xxx）
+    let imgScope = detailNode;
+    for (let i = 0; i < 3 && imgScope; i++) {
+      if (imgScope.tagName === "BODY" || imgScope.tagName === "HTML") break;
+      const imgs = imgScope.querySelectorAll("img");
+      for (const img of imgs) {
+        const src = img.getAttribute("src") || img.getAttribute("data-src") || "";
+        const im = src.match(/\/([0-9a-zA-Z]{20,})(?:[._/]|$)/);
+        if (im) return im[1].split("_")[0];
+      }
+      imgScope = imgScope.parentElement;
     }
+
     return "";
   }
 
@@ -185,10 +179,10 @@
       return "";
     };
 
-    const title = pick(["#detail-title", ".title", ".note-title"]);
+    const title = pick(["#detail-title", ".note-title"]);
+    // 正文：只用强特征选择器（移除 .desc 等通用 class，避免"暂无简介"误采）
     const content = pick([
       "#detail-desc",
-      ".desc",
       ".note-content",
       "#detail-content",
       ".note-text",
@@ -571,8 +565,10 @@
   function autoCollectIfDetail() {
     const type = pageTypeLabel(location.pathname);
     // 门控：URL 是详情页，或 DOM 已有浮层详情内容（收藏页浮层打开场景）
+    // 注意：只认强特征节点（#detail-* / .note-content），排除 .desc 等
+    // 通用 class，避免 /board/ 收藏夹页的"暂无简介"误判为详情。
     const hasOverlayDetail = !!document.querySelector(
-      "#detail-desc, .desc, .note-content, #detail-content, .note-text, #detail-title, .note-title"
+      "#detail-desc, .note-content, #detail-content, .note-text, #detail-title"
     );
     if (!isDetailPath(location.pathname) && !hasOverlayDetail) {
       console.log(`[ReCollect][passive] 非笔记详情页，跳过: ${location.pathname} (类型=${type})`);
@@ -590,6 +586,16 @@
       try {
         const detail = extractDetailFromDOM();
         if (detail && detail._blocked) return; // 风控页不记录
+
+        // ---- 数据一致性保护 ----
+        // detail.note_id 必须与门控时确认的 noteId 一致，否则丢弃
+        // （防止浮层/列表残留 DOM 造成 note_id 与内容错配，污染 RawNote）
+        if (!detail.note_id || detail.note_id !== noteId) {
+          console.log(
+            `[ReCollect][guard] note_view discarded: note_id mismatch (expect=${noteId}, got=${detail.note_id || "(empty)"}, pathname=${location.pathname})`
+          );
+          return;
+        }
         if (!detail.content && detail.images.length === 0) {
           console.log("[ReCollect][passive] 详情页无内容（选择器未命中？），不记录:", noteId);
           return; // 空页不记录
