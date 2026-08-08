@@ -307,7 +307,10 @@
   // 收藏按钮监听：document 级事件委托（v0.2.9）
   // 真实 DOM 验证：收藏按钮容器 #note-page-collect-board-guide.collect-wrapper
   // 触发：点击事件命中 .collect-wrapper（含收藏/取消收藏两种状态）
-  // note_id：直接使用 activeNoteId（note_view 采集时已记录），不重新解析
+  // note_id 优先级：
+  //   1. activeNoteId（note_view 采集完成时记录）
+  //   2. URL 兜底（用户先点收藏、note_view 1.2s 延迟未完成时；
+  //      详情页 pathname=/explore/{id} 时 URL 是精确来源）
   function initCollectListener() {
     document.addEventListener(
       "click",
@@ -316,9 +319,18 @@
         if (!target) return;
         console.log("[ReCollect][collect] clicked");
 
-        const noteId = activeNoteId || "";
+        // 1) activeNoteId（note_view 已记录）
+        let noteId = activeNoteId || "";
+        // 2) URL 兜底（收藏点击先于 note_view 延迟采集完成）
         if (!noteId) {
-          console.log("[ReCollect][collect] no active note_id，跳过（未浏览详情页）");
+          const m = location.pathname.match(/^\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
+          if (m) {
+            noteId = m[2];
+            activeNoteId = noteId; // 同步记录，避免重复兜底
+          }
+        }
+        if (!noteId) {
+          console.log("[ReCollect][collect] no active note_id，跳过（非详情页）");
           return;
         }
         const event = buildCollectEvent(noteId);
