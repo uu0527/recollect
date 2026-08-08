@@ -27,6 +27,53 @@ L1_CATEGORIES = [
 ]
 
 
+def _select_note_images(images: List[str]) -> List[str]:
+    """Image Router：Vision 前筛选图片（降 token 成本，保高价值图）
+
+    用下载 HEAD/部分字节获取尺寸与大小做评分；下载失败时
+    降级为无 metadata 选择（仅 URL 去重 + 顺序）。
+    不修改 RawNote 原始 images。
+    """
+    from collector.image_router import select_images
+
+    if not images:
+        return []
+
+    def _metadata(url: str) -> Dict:
+        """轻量获取图片 metadata（webp 头解析尺寸 + Content-Length），失败返回空"""
+        try:
+            import struct
+            import urllib.request
+
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                head = resp.read(40)  # webp 头足够解析宽高
+                size_hint = resp.headers.get("Content-Length")
+            meta: Dict = {}
+            if size_hint:
+                meta["size_bytes"] = int(size_hint)
+            # WebP 尺寸：RIFF....WEBP + VP8X/VP8L/VP8 头
+            if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+                chunk = head[12:16]
+                if chunk == b"VP8X" and len(head) >= 30:
+                    w = struct.unpack("<I", head[24:27] + b"\x00")[0]
+                    h = struct.unpack("<I", head[27:30] + b"\x00")[0]
+                    meta["width"], meta["height"] = w, h
+                elif chunk == b"VP8 " and len(head) >= 22:  # lossy
+                    w = struct.unpack("<H", head[18:20])[0]
+                    h = struct.unpack("<H", head[20:22])[0]
+                    meta["width"], meta["height"] = w, h
+                elif chunk == b"VP8L" and len(head) >= 25:  # lossless
+                    bits = struct.unpack("<I", head[21:25])[0]
+                    meta["width"] = (bits & 0x3FFF) + 1
+                    meta["height"] = ((bits >> 14) & 0x3FFF) + 1
+            return meta
+        except Exception:
+            return {}
+
+    return select_images(images, metadata_provider=_metadata)
+
+
 def _normalize_p3(raw: Dict) -> Dict:
     """把 LLM 原始输出归一化到合法 SummarizedNote 字段"""
     l1 = str(raw.get("category_l1", "")).strip()
@@ -222,10 +269,12 @@ def run(task_id: str,
         if not use_heuristic:
             # 每条 note 独立路由：有图片 → 自动切 qwen3-vl-plus（Vision）；
             # 纯文本 → 按内容复杂度决定 DeepSeek/智谱
+            # Image Router：Vision 前筛选图片（降 token 成本，保高价值图）
+            selected_images = _select_note_images(note.images)
             provider = get_stage_provider("p3", task_id=task_id,
                                           task_type="summary",
                                           text=note.title + "\n" + note.content,
-                                          images=note.images or None)
+                                          images=selected_images or None)
             use_heuristic = (provider.provider_name == "mock")
 
         if use_heuristic:
