@@ -43,8 +43,22 @@ class StorageAdapter(ABC):
 
 
 def get_adapter() -> StorageAdapter:
-    """按环境变量选择存储后端（默认 file，保证现有测试不受影响）"""
+    """按环境变量选择存储后端（默认 file，保证现有测试不受影响）
+
+    兜底加载 .env（调用方可能未 import config/load_dotenv）。
+    """
     import os
+    from pathlib import Path
+
+    if os.environ.get("STORAGE_BACKEND") is None:
+        # 尝试加载项目根 .env（静默失败：无文件时保持默认 file）
+        env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+        if env_path.exists():
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(env_path)
+            except Exception:
+                pass
 
     backend = os.environ.get("STORAGE_BACKEND", "file").strip().lower()
     if backend == "supabase":

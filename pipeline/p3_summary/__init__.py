@@ -351,7 +351,6 @@ def run(task_id: str,
     # 双写：同步入库 Supabase（默认 file adapter；失败不阻断）
     try:
         from collector.context_store.adapters import get_adapter
-        from schemas import RawNote
         adapter = get_adapter()
         raw_map2 = {n.note_id: n for n in load_jsonl(str(path_raw(task_id)), RawNote)}
         synced = 0

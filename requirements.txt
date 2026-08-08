@@ -28,6 +28,9 @@ lxml>=4.9.0
 # 真实飞书 API 时安装
 # lark-oapi>=1.0.0
 
+# ---------- Supabase Storage Adapter（Alpha MVP P0）----------
+supabase>=2.0.0
+
 # ---------- P6 RAG ----------
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
