@@ -1,0 +1,156 @@
+{
+  "cases": [
+    {
+      "case_id": "real_xiaohongshu_summer_outfit",
+      "title": "我的夏日穿搭记录",
+      "note_id": "6a7692b10000000033011882",
+      "status": "OK",
+      "before": 12,
+      "after": 6,
+      "reduction_rate": 0.5,
+      "token_saving": {
+        "before_tokens": 18000,
+        "after_tokens": 9000,
+        "saved_tokens": 9000
+      },
+      "preservation": {
+        "pass": true,
+        "checks": {
+          "long_image": true,
+          "high_score": true
+        },
+        "details": {
+          "long_image": "丢弃 6 张(最高分 50.0 ≤ 已选最低 50.0)",
+          "high_score": "丢弃 6 张(最高分 50.0 ≤ 已选最低 50.0)"
+        }
+      },
+      "selected_urls": [
+        "https://sns-webpic-qc.xhscdn.com/202608081618/7969913d6202b9224c661137199125bf/notes_pre_post/1040g3k8323jfib0l7a5g5q2814lmse47hjl8ibg!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081618/077742ea3c9dfe1b04b5bed9f011c941/notes_pre_post/1040g3k8323jfib0l7a005q2814lmse47o920kqo!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081618/e215bc9d0f1810186299304f2eb96c19/notes_pre_post/1040g3k8323jfib0l7a0g5q2814lmse47vaqmd20!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081618/d2cb7b81fc5388259b6dfff37a85ec73/notes_pre_post/1040g3k8323jfib0l7a105q2814lmse47o7bpjfo!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081618/e6368c2239ea5184ec697a74b8edadf2/notes_pre_post/1040g3k8323jfib0l7a1g5q2814lmse479k325j8!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081618/89234cccee20ab91ccbca8d833dbbfcc/notes_pre_post/1040g3k8323jfib0l7a205q2814lmse47td9uej0!nd_dft_wlteh_webp_3"
+      ]
+    },
+    {
+      "case_id": "real_xiaohongshu_kaohsiung_taichung",
+      "title": "如何从高雄机场去台南（台铁）",
+      "note_id": "68da9afb0000000013011d33",
+      "status": "OK",
+      "before": 12,
+      "after": 6,
+      "reduction_rate": 0.5,
+      "token_saving": {
+        "before_tokens": 18000,
+        "after_tokens": 9000,
+        "saved_tokens": 9000
+      },
+      "preservation": {
+        "pass": true,
+        "checks": {
+          "long_image": true,
+          "high_score": true
+        },
+        "details": {
+          "long_image": "丢弃 1 张(最高分 30.0 ≤ 已选最低 50.0)",
+          "high_score": "全部保留"
+        }
+      },
+      "selected_urls": [
+        "https://sns-webpic-qc.xhscdn.com/202608081433/0393fd0813ac468925221d7a88b1210b/1040g00831n14phlhli1g5oggocqod3igqem3o78!nd_dft_wgth_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081433/2b2e6b1b8ea8863c8512c5e435d0c5df/1040g00831n14phlhli205oggocqod3ig33r12f0!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081433/c37c587aafebf6af82feb7e3008c029c/1040g00831n14phlhli2g5oggocqod3igvg20q7g!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081433/aa3d9fd404c857d824032fd55dc9de48/1040g00831n14phlhli0g5oggocqod3ig5b37vi0!nd_dft_wlteh_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081433/56fa7020de3dd11600c0e50ca823c941/1040g00831n14phlhli105oggocqod3igbf11ne0!nd_dft_wgth_webp_3",
+        "https://sns-webpic-qc.xhscdn.com/202608081433/7eedbcd7b594af14bb6db1715209c501/1040g00831n14phlhli3g5oggocqod3ig72rurto!nd_dft_wgth_webp_3"
+      ]
+    },
+    {
+      "case_id": "synth_12_dedup_tall",
+      "title": "合成：6重复+3长图+3普通",
+      "note_id": "",
+      "status": "OK",
+      "before": 12,
+      "after": 6,
+      "reduction_rate": 0.5,
+      "token_saving": {
+        "before_tokens": 18000,
+        "after_tokens": 9000,
+        "saved_tokens": 9000
+      },
+      "preservation": {
+        "pass": true,
+        "checks": {
+          "long_image": true
+        },
+        "details": {
+          "long_image": "全部保留"
+        }
+      },
+      "selected_urls": [
+        "https://synth.example/tall1.webp",
+        "https://synth.example/tall2.webp",
+        "https://synth.example/tall0.webp",
+        "https://synth.example/norm1.webp",
+        "https://synth.example/norm2.webp",
+        "https://synth.example/norm0.webp"
+      ]
+    },
+    {
+      "case_id": "synth_cover_knowledge",
+      "title": "合成：封面+知识长图",
+      "note_id": "",
+      "status": "OK",
+      "before": 2,
+      "after": 2,
+      "reduction_rate": 0.0,
+      "token_saving": {
+        "before_tokens": 3000,
+        "after_tokens": 3000,
+        "saved_tokens": 0
+      },
+      "preservation": {
+        "pass": true,
+        "checks": {
+          "knowledge_first": true
+        },
+        "details": {
+          "knowledge_first": "知识长图优先于普通图"
+        }
+      },
+      "selected_urls": [
+        "https://synth.example/tall0.webp",
+        "https://synth.example/cover_small.webp"
+      ]
+    },
+    {
+      "case_id": "synth_10_normal",
+      "title": "合成：10张普通照片",
+      "note_id": "",
+      "status": "OK",
+      "before": 10,
+      "after": 3,
+      "reduction_rate": 0.7,
+      "token_saving": {
+        "before_tokens": 15000,
+        "after_tokens": 4500,
+        "saved_tokens": 10500
+      },
+      "preservation": {
+        "pass": true,
+        "checks": {
+          "selected_non_empty": true
+        },
+        "details": {
+          "selected_non_empty": "选中 3 张"
+        }
+      },
+      "selected_urls": [
+        "https://synth.example/norm1.webp",
+        "https://synth.example/norm2.webp",
+        "https://synth.example/norm3.webp"
+      ]
+    }
+  ]
+}

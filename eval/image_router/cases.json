@@ -1,0 +1,64 @@
+{
+  "description": "Image Router Eval Cases — 离线评估 Image Router 对 Vision pipeline 的影响",
+  "version": "0.1.0",
+  "cases": [
+    {
+      "case_id": "real_xiaohongshu_summer_outfit",
+      "note_id": "6a7692b10000000033011882",
+      "title": "我的夏日穿搭记录",
+      "image_count_before": 12,
+      "expected_max_images": 6,
+      "expected_keep_patterns": ["long_image", "high_score"],
+      "source": "real_events_20260808"
+    },
+    {
+      "case_id": "real_xiaohongshu_kaohsiung_taichung",
+      "note_id": "68da9afb0000000013011d33",
+      "title": "如何从高雄机场去台南（台铁）",
+      "image_count_before": 12,
+      "expected_max_images": 6,
+      "expected_keep_patterns": ["long_image", "high_score"],
+      "source": "real_events_20260808"
+    },
+    {
+      "case_id": "synth_12_dedup_tall",
+      "note_id": "",
+      "title": "合成：6重复+3长图+3普通",
+      "image_count_before": 12,
+      "expected_max_images": 6,
+      "expected_keep_patterns": ["long_image"],
+      "image_spec": {
+        "tall_count": 3,
+        "normal_count": 3,
+        "duplicate_of": "normal",
+        "duplicate_count": 6
+      },
+      "source": "synthetic"
+    },
+    {
+      "case_id": "synth_cover_knowledge",
+      "note_id": "",
+      "title": "合成：封面+知识长图",
+      "image_count_before": 2,
+      "expected_max_images": 2,
+      "expected_keep_patterns": ["knowledge_first"],
+      "image_spec": {
+        "cover_small": true,
+        "tall_count": 1
+      },
+      "source": "synthetic"
+    },
+    {
+      "case_id": "synth_10_normal",
+      "note_id": "",
+      "title": "合成：10张普通照片",
+      "image_count_before": 10,
+      "expected_max_images": 6,
+      "expected_keep_patterns": [],
+      "image_spec": {
+        "normal_count": 10
+      },
+      "source": "synthetic"
+    }
+  ]
+}
