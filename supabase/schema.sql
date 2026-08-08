@@ -1,12 +1,3 @@
--- ============================================================
--- ReCollect Supabase Schema (Alpha MVP P0)
--- Tables: events / knowledge
--- Execute in Supabase SQL Editor
--- ============================================================
-
--- ------------------------------------------------------------
--- events: raw browser events (note_view / note_collect)
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS events (
     id          BIGSERIAL PRIMARY KEY,
     event_type  TEXT NOT NULL,
@@ -24,9 +15,6 @@ CREATE INDEX IF NOT EXISTS idx_events_note_id    ON events (note_id);
 CREATE INDEX IF NOT EXISTS idx_events_event_type ON events (event_type);
 CREATE INDEX IF NOT EXISTS idx_events_created_at ON events (created_at DESC);
 
--- ------------------------------------------------------------
--- knowledge: knowledge cards (core output for Web display)
--- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS knowledge (
     id            BIGSERIAL PRIMARY KEY,
     note_id       TEXT UNIQUE NOT NULL,
@@ -48,8 +36,3 @@ CREATE TABLE IF NOT EXISTS knowledge (
 
 CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge (category_l1);
 CREATE INDEX IF NOT EXISTS idx_knowledge_created  ON knowledge (created_at DESC);
-
--- Upsert usage:
---   INSERT INTO knowledge (...) VALUES (...)
---   ON CONFLICT (note_id) DO UPDATE SET title = EXCLUDED.title, updated_at = now();
--- Or via supabase-py: table('knowledge').upsert(row, on_conflict = 'note_id')
