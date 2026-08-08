@@ -220,7 +220,20 @@ def _run_p2_p6(task_id: str, skip_multimodal: bool = False) -> dict:
     # P6 索引
     _stage("p6_memory", lambda: p6(task_id))
 
+    # User Memory Builder（一次完整运行后更新用户记忆；失败不阻断）
+    _run_memory_builder(task_id)
+
     return {"stages": stages, "stats": stats}
+
+
+def _run_memory_builder(task_id: str) -> None:
+    """P6 之后更新用户记忆（data/06_memory/user_memory.json）；失败仅 warning"""
+    try:
+        from collector.memory_builder import update_user_memory
+        from config import SUMMARY_DIR, AUDIT_DIR
+        update_user_memory(SUMMARY_DIR, AUDIT_DIR, ROOT / "data" / "events", task_id)
+    except Exception as e:
+        print(f"[Memory] WARNING: 用户记忆更新失败（不阻断 pipeline）: {type(e).__name__}: {e}")
 
 
 def _run_mock_feishu(task_id: str) -> None:
