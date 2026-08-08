@@ -214,10 +214,25 @@ def _run_p2_p6(task_id: str, skip_multimodal: bool = False) -> dict:
     if out4:
         stats["written"] = _count_lines(Path(out4))
 
+    # Mock Feishu Writer（P4 之后自动生成 mock 表；失败不阻断 pipeline）
+    _run_mock_feishu(task_id)
+
     # P6 索引
     _stage("p6_memory", lambda: p6(task_id))
 
     return {"stages": stages, "stats": stats}
+
+
+def _run_mock_feishu(task_id: str) -> None:
+    """P4 之后生成 mock_feishu_bitable.jsonl（失败仅 warning，不阻断）"""
+    try:
+        from collector.feishu_adapter.mock_writer import build_mock_bitable
+        from config import SUMMARY_DIR, WRITE_DIR
+        build_mock_bitable(WRITE_DIR, SUMMARY_DIR, task_id)
+        print(f"[Mock Feishu] generated data/04_write/mock_feishu_bitable.jsonl")
+    except Exception as e:
+        # 失败不阻断 pipeline：记录 warning
+        print(f"[Mock Feishu] WARNING: 生成 mock 表失败（不阻断 pipeline）: {type(e).__name__}: {e}")
 
 
 def main() -> int:
