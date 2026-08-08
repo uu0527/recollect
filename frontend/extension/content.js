@@ -304,62 +304,25 @@
   }
 
   // 收藏按钮监听：检测用户点击收藏/取消收藏按钮（Phase 1：仅检测+记录事件）
+  // 收藏按钮监听：document 级事件委托（v0.2.9）
+  // 真实 DOM 验证：收藏按钮容器 #note-page-collect-board-guide.collect-wrapper
+  // 触发：点击事件命中 .collect-wrapper（含收藏/取消收藏两种状态）
+  // note_id：直接使用 activeNoteId（note_view 采集时已记录），不重新解析
   function initCollectListener() {
-    // 收藏按钮常见特征：点击后 class 或 aria-label 变化（collect/favorite/like）
-    const COLLECT_SEL = [
-      ".collect-wrapper .collect-btn",
-      ".collect-btn",
-      "[class*=collect] button",
-      "[aria-label*=收藏]",
-      ".favorite-btn",
-      "[class*=favorite]",
-    ].join(", ");
     document.addEventListener(
       "click",
       (e) => {
-        const target = e.target.closest ? e.target.closest(COLLECT_SEL) : null;
+        const target = e.target && e.target.closest ? e.target.closest(".collect-wrapper") : null;
         if (!target) return;
+        console.log("[ReCollect][collect] clicked");
 
-        // 提取 note_id：不依赖 pathname（支持普通详情页 / 收藏页浮层 / SPA 路由）
-        let noteId = "";
-        // 1) URL（/explore/{id} 或 /discovery/item/{id}）
-        const m = location.pathname.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
-        if (m) noteId = m[2];
-        // 2) 点击目标附近链接（浮层内收藏按钮通常在同容器的详情卡片里）
+        const noteId = activeNoteId || "";
         if (!noteId) {
-          let n = target;
-          for (let i = 0; i < 4 && n; i++) {
-            const link = n.querySelector && n.querySelector(
-              'a[href*="/explore/"], a[href*="/discovery/item/"]'
-            );
-            const href = link ? link.getAttribute("href") : (n.getAttribute && n.getAttribute("href")) || "";
-            const lm = href.match(/\/(explore|discovery\/item)\/([0-9a-zA-Z]+)/);
-            if (lm) { noteId = lm[2]; break; }
-            n = n.parentElement;
-          }
+          console.log("[ReCollect][collect] no active note_id，跳过（未浏览详情页）");
+          return;
         }
-        // 3) DOM 兜底（详情内容节点/图片 URL）
-        if (!noteId) noteId = getCurrentNoteId();
-        // 4) 延迟重试（浮层刚打开 DOM 未渲染完，100ms 后再取一次）
-        if (!noteId) {
-          setTimeout(() => {
-            try {
-              const retryId = getCurrentNoteId();
-              if (retryId) {
-                console.log("[ReCollect][event] 收藏操作（延迟补采 note_id）:", retryId);
-                const ev = buildCollectEvent(retryId);
-                chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT", event: ev });
-              }
-            } catch (_) { /* 页面可能已卸载 */ }
-          }, 150);
-        }
-
         const event = buildCollectEvent(noteId);
-        if (noteId) {
-          console.log("[ReCollect][event] ✅ 收藏事件 note_id=", noteId);
-        } else {
-          console.log("[ReCollect][event] 检测到收藏操作，但暂未提取到 note_id（稍后重试）");
-        }
+        console.log(`[ReCollect][collect] emit note_collect ${noteId}`);
         try {
           chrome.runtime.sendMessage({ type: "RECOLLECT_EVENT", event });
         } catch (_) { /* sendMessage 失败不影响采集流程 */ }
@@ -540,6 +503,8 @@
   // ============================================================
   let lastCollectedNoteId = "";
   let collectTimer = null;
+  // 当前激活的笔记 note_id（note_view 采集成功后记录，供收藏监听复用）
+  let activeNoteId = "";
 
   // 严格判断：仅 /explore/{note_id} 或 /discovery/item/{note_id} 笔记详情页
   function isDetailPath(pathname) {
@@ -602,6 +567,7 @@
         }
 
         lastCollectedNoteId = noteId;
+        activeNoteId = detail.note_id || noteId; // 记录 active note_id，供收藏监听复用
         // 上报给 background 暂存
         chrome.runtime.sendMessage({ type: "RECOLLECT_AUTO_DETAIL", detail });
         // Browser Event Collector：发射 note_view 事件（Phase 1）
