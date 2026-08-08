@@ -132,6 +132,12 @@ class OpenAICompatibleClient(LLMClient):
         """带指数退避的单次 API 调用。
         支持 Vision：kw 可传 images=[url 或 base64 data-uri,...]，
         将 user 消息构造为多模态 content 数组（openai 兼容格式）。
+
+        图片统一转换为 base64 data-uri 后发送（本地可验证方案）：
+          - http/https URL → 下载 → base64
+          - 本地路径      → 读取 → base64
+          - data URI      → 原样直传
+        单图失败（下载/读取）→ 跳过该图并 WARNING，不中断整篇。
         """
         images: List[str] = kw.get("images", []) or []
         messages: List[Dict] = [
@@ -141,16 +147,33 @@ class OpenAICompatibleClient(LLMClient):
             # 多模态消息：content 为 [{type:text},{type:image_url},...]
             content: List[Dict[str, Any]] = [{"type": "text", "text": user}]
             for img in images:
-                if img.startswith("data:") or img.startswith("http"):
+                if img.startswith("data:"):
+                    # base64 data URI：原样直传
                     content.append({
                         "type": "image_url",
                         "image_url": {"url": img},
                     })
-                else:
-                    # 本地路径 → base64 data-uri
+                elif img.startswith("http"):
+                    # http/https URL → 下载 → base64（绕开远端抓取不确定性）
+                    try:
+                        uri = _url_to_data_uri(img)
+                    except Exception as exc:
+                        print(f"[{self.provider_name}] WARNING: 图片下载失败，跳过: {type(exc).__name__}: {exc}")
+                        continue
                     content.append({
                         "type": "image_url",
-                        "image_url": {"url": _local_image_to_data_uri(img)},
+                        "image_url": {"url": uri},
+                    })
+                else:
+                    # 本地路径 → base64 data-uri（文件不存在则跳过该图，不中断）
+                    try:
+                        uri = _local_image_to_data_uri(img)
+                    except FileNotFoundError:
+                        print(f"[{self.provider_name}] WARNING: 图片不存在，跳过: {img}")
+                        continue
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {"url": uri},
                     })
             messages.append({"role": "user", "content": content})
         else:
@@ -209,3 +232,27 @@ def _local_image_to_data_uri(path: str) -> str:
     mime = mimetypes.guess_type(p.name)[0] or "image/png"
     b64 = base64.b64encode(p.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{b64}"
+
+
+def _url_to_data_uri(url: str, timeout: float = 20.0, max_bytes: int = 5 * 1024 * 1024) -> str:
+    """http/https 图片 URL → base64 data URI（下载后本地转换）
+
+    带 UA 请求；超过 max_bytes 抛错（避免超大图）；
+    单图失败由调用方捕获（跳过该图，不中断整篇）。
+    """
+    import base64
+    import mimetypes
+    import urllib.request
+    from urllib.parse import urlparse
+
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        data = resp.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise ValueError(f"图片过大: {len(data)} bytes > {max_bytes}")
+    # mime：优先响应头，其次按扩展名
+    ctype = resp.headers.get("Content-Type", "")
+    if not ctype or "image" not in ctype:
+        ctype = mimetypes.guess_type(urlparse(url).path)[0] or "image/jpeg"
+    b64 = base64.b64encode(data).decode("ascii")
+    return f"data:{ctype};base64,{b64}"
