@@ -348,6 +348,25 @@ def run(task_id: str,
 
     out_path = path_summary(task_id)
     dump_json(str(out_path), out)
+    # 双写：同步入库 Supabase（默认 file adapter；失败不阻断）
+    try:
+        from collector.context_store.adapters import get_adapter
+        from schemas import RawNote
+        adapter = get_adapter()
+        raw_map2 = {n.note_id: n for n in load_jsonl(str(path_raw(task_id)), RawNote)}
+        synced = 0
+        for s in out:
+            raw = raw_map2.get(s.note_id)
+            card = s.to_dict()
+            if raw is not None:
+                card["raw_content"] = raw.content
+                card["images"] = raw.images or []
+            if adapter.upsert_knowledge(card):
+                synced += 1
+        if synced:
+            print(f"[P3] 已同步入库 {synced} 条（adapter={adapter.name}）")
+    except Exception as exc:
+        print(f"[P3] WARNING: 知识入库失败（不阻断）: {exc}")
     extra = f"（skip_multimodal={skip_multimodal}）" if skip_multimodal else ""
     extra += f"（模型覆盖={model_override}）" if model_override else ""
     print(f"[P3] task_id={task_id}  归纳 {len(out)} 条 → {out_path.name}{extra}")

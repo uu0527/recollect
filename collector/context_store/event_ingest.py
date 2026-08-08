@@ -137,6 +137,27 @@ def main() -> int:
     if new_notes:
         dump_jsonl(str(out_path), new_notes)
         print(f"[ingest] ✅ 写入 {len(new_notes)} 条 → {out_path}")
+        # 双写：原始事件同步入库 Supabase（默认 file adapter；失败不阻断）
+        try:
+            from collector.context_store.adapters import get_adapter
+            adapter = get_adapter()
+            synced = 0
+            for r in new_notes:
+                if adapter.add_event({
+                    "event_type": "note_view",
+                    "note_id": r.note_id,
+                    "url": r.url,
+                    "title": r.title,
+                    "content": r.content,
+                    "images": r.images or [],
+                    "author": r.metadata.get("author", ""),
+                    "timestamp": r.metadata.get("event_timestamp", ""),
+                }):
+                    synced += 1
+            if synced:
+                print(f"[ingest] 事件已同步入库 {synced} 条（adapter={adapter.name}）")
+        except Exception as exc:
+            print(f"[ingest] WARNING: 事件入库失败（不阻断）: {exc}")
     else:
         print("[ingest] 无新增（全部重复）")
 
