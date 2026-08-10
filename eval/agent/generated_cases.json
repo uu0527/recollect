@@ -1,0 +1,1085 @@
+{
+ "description": "Generated from real knowledge",
+ "cases": [
+  {
+   "id": "69058a8e0000_summary_718",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "帮我总结一下这篇笔记的核心内容",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "帮我总结一下这篇笔记的核心内容",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "69058a8e0000_summary_713",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "这篇笔记大概讲了什么？",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "这篇笔记大概讲了什么？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "69058a8e0000_source_grounding_304",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "这个知识具体有哪些关键信息？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识具体有哪些关键信息？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "69058a8e0000_source_grounding_592",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "这篇内容有什么值得注意的细节？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "这篇内容有什么值得注意的细节？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "69058a8e0000_decision_support_280",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "这个信息对我做决定有帮助吗？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "这个信息对我做决定有帮助吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "69058a8e0000_decision_support_654",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "基于这个知识，我该从哪入手？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "基于这个知识，我该从哪入手？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "69058a8e0000_knowledge_exploration_33",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "关于这个话题还有哪些细节？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "关于这个话题还有哪些细节？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "69058a8e0000_knowledge_exploration_983",
+   "knowledge_id": "69058a8e000000000501005a",
+   "question": "想多了解下这个知识",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "店铺地址",
+    "台南市永康区",
+    "大桥火车站步"
+   ],
+   "source": "generated_from_real",
+   "template": "想多了解下这个知识",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "陈数推荐的话梅台南实",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_summary_790",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "帮我看看这篇内容说了什么",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "帮我看看这篇内容说了什么",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_summary_195",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "能简单概括下这个知识吗？",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "能简单概括下这个知识吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_source_grounding_349",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "详细说说这篇的内容",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "详细说说这篇的内容",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_source_grounding_184",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "这个知识里有哪些具体的点？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识里有哪些具体的点？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_decision_support_680",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "这个知识有什么参考价值？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识有什么参考价值？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_decision_support_527",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "看完这个知识，接下来该怎么行动？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "看完这个知识，接下来该怎么行动？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_knowledge_exploration_950",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "这个话题具体是怎么说的？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "这个话题具体是怎么说的？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "67fdfd140000_knowledge_exploration_316",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "question": "这个知识里还有什么我没注意到的？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "永康街",
+    "天津葱抓饼",
+    "为当地知名小"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识里还有什么我没注意到的？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "台北一人食",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "690490770000_summary_718",
+   "knowledge_id": "6904907700000000030185f5",
+   "question": "帮我总结一下这篇笔记的核心内容",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "饶河夜市是台",
+    "北知名夜市",
+    "美食选择丰富"
+   ],
+   "source": "generated_from_real",
+   "template": "帮我总结一下这篇笔记的核心内容",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "精選饒河夜市必吃",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "690490770000_source_grounding_304",
+   "knowledge_id": "6904907700000000030185f5",
+   "question": "这个知识具体有哪些关键信息？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "饶河夜市是台",
+    "北知名夜市",
+    "美食选择丰富"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识具体有哪些关键信息？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "精選饒河夜市必吃",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "690490770000_decision_support_799",
+   "knowledge_id": "6904907700000000030185f5",
+   "question": "这个内容能帮我做出更好的判断吗？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "饶河夜市是台",
+    "北知名夜市",
+    "美食选择丰富"
+   ],
+   "source": "generated_from_real",
+   "template": "这个内容能帮我做出更好的判断吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "精選饒河夜市必吃",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "690490770000_decision_support_280",
+   "knowledge_id": "6904907700000000030185f5",
+   "question": "这个信息对我做决定有帮助吗？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "饶河夜市是台",
+    "北知名夜市",
+    "美食选择丰富"
+   ],
+   "source": "generated_from_real",
+   "template": "这个信息对我做决定有帮助吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "精選饒河夜市必吃",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "690490770000_knowledge_exploration_239",
+   "knowledge_id": "6904907700000000030185f5",
+   "question": "这个话题的背景是什么？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "饶河夜市是台",
+    "北知名夜市",
+    "美食选择丰富"
+   ],
+   "source": "generated_from_real",
+   "template": "这个话题的背景是什么？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "精選饒河夜市必吃",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "690490770000_knowledge_exploration_33",
+   "knowledge_id": "6904907700000000030185f5",
+   "question": "关于这个话题还有哪些细节？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "饶河夜市是台",
+    "北知名夜市",
+    "美食选择丰富"
+   ],
+   "source": "generated_from_real",
+   "template": "关于这个话题还有哪些细节？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "精選饒河夜市必吃",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7581960000_summary_713",
+   "knowledge_id": "6a758196000000003301ab73",
+   "question": "这篇笔记大概讲了什么？",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "年法国国际采",
+    "购全职经验",
+    "但回国后投递"
+   ],
+   "source": "generated_from_real",
+   "template": "这篇笔记大概讲了什么？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "求助贴",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7581960000_source_grounding_592",
+   "knowledge_id": "6a758196000000003301ab73",
+   "question": "这篇内容有什么值得注意的细节？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "年法国国际采",
+    "购全职经验",
+    "但回国后投递"
+   ],
+   "source": "generated_from_real",
+   "template": "这篇内容有什么值得注意的细节？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "求助贴",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7581960000_decision_support_654",
+   "knowledge_id": "6a758196000000003301ab73",
+   "question": "基于这个知识，我该从哪入手？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "年法国国际采",
+    "购全职经验",
+    "但回国后投递"
+   ],
+   "source": "generated_from_real",
+   "template": "基于这个知识，我该从哪入手？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "求助贴",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7581960000_decision_support_680",
+   "knowledge_id": "6a758196000000003301ab73",
+   "question": "这个知识有什么参考价值？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "年法国国际采",
+    "购全职经验",
+    "但回国后投递"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识有什么参考价值？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "求助贴",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7581960000_knowledge_exploration_983",
+   "knowledge_id": "6a758196000000003301ab73",
+   "question": "想多了解下这个知识",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "年法国国际采",
+    "购全职经验",
+    "但回国后投递"
+   ],
+   "source": "generated_from_real",
+   "template": "想多了解下这个知识",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "求助贴",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7581960000_knowledge_exploration_950",
+   "knowledge_id": "6a758196000000003301ab73",
+   "question": "这个话题具体是怎么说的？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "年法国国际采",
+    "购全职经验",
+    "但回国后投递"
+   ],
+   "source": "generated_from_real",
+   "template": "这个话题具体是怎么说的？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "求助贴",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a6e1afd0000_summary_790",
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "question": "帮我看看这篇内容说了什么",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "大厂多数岗位",
+    "学历门槛高",
+    "但招商"
+   ],
+   "source": "generated_from_real",
+   "template": "帮我看看这篇内容说了什么",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "聪明人不要随便进大厂",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a6e1afd0000_source_grounding_349",
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "question": "详细说说这篇的内容",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "大厂多数岗位",
+    "学历门槛高",
+    "但招商"
+   ],
+   "source": "generated_from_real",
+   "template": "详细说说这篇的内容",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "聪明人不要随便进大厂",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a6e1afd0000_decision_support_527",
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "question": "看完这个知识，接下来该怎么行动？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "大厂多数岗位",
+    "学历门槛高",
+    "但招商"
+   ],
+   "source": "generated_from_real",
+   "template": "看完这个知识，接下来该怎么行动？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "聪明人不要随便进大厂",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a6e1afd0000_decision_support_799",
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "question": "这个内容能帮我做出更好的判断吗？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "大厂多数岗位",
+    "学历门槛高",
+    "但招商"
+   ],
+   "source": "generated_from_real",
+   "template": "这个内容能帮我做出更好的判断吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "聪明人不要随便进大厂",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a6e1afd0000_knowledge_exploration_316",
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "question": "这个知识里还有什么我没注意到的？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "大厂多数岗位",
+    "学历门槛高",
+    "但招商"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识里还有什么我没注意到的？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "聪明人不要随便进大厂",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a6e1afd0000_knowledge_exploration_239",
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "question": "这个话题的背景是什么？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "大厂多数岗位",
+    "学历门槛高",
+    "但招商"
+   ],
+   "source": "generated_from_real",
+   "template": "这个话题的背景是什么？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "聪明人不要随便进大厂",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a75db920000_summary_195",
+   "knowledge_id": "6a75db92000000002202feba",
+   "question": "能简单概括下这个知识吗？",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "绝大多数猫咪",
+    "死因是慢性肾",
+    "主因是其体内"
+   ],
+   "source": "generated_from_real",
+   "template": "能简单概括下这个知识吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "日本科学家成功研发",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a75db920000_source_grounding_184",
+   "knowledge_id": "6a75db92000000002202feba",
+   "question": "这个知识里有哪些具体的点？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "绝大多数猫咪",
+    "死因是慢性肾",
+    "主因是其体内"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识里有哪些具体的点？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "日本科学家成功研发",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a75db920000_decision_support_280",
+   "knowledge_id": "6a75db92000000002202feba",
+   "question": "这个信息对我做决定有帮助吗？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "绝大多数猫咪",
+    "死因是慢性肾",
+    "主因是其体内"
+   ],
+   "source": "generated_from_real",
+   "template": "这个信息对我做决定有帮助吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "日本科学家成功研发",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a75db920000_decision_support_654",
+   "knowledge_id": "6a75db92000000002202feba",
+   "question": "基于这个知识，我该从哪入手？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "绝大多数猫咪",
+    "死因是慢性肾",
+    "主因是其体内"
+   ],
+   "source": "generated_from_real",
+   "template": "基于这个知识，我该从哪入手？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "日本科学家成功研发",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a75db920000_knowledge_exploration_33",
+   "knowledge_id": "6a75db92000000002202feba",
+   "question": "关于这个话题还有哪些细节？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "绝大多数猫咪",
+    "死因是慢性肾",
+    "主因是其体内"
+   ],
+   "source": "generated_from_real",
+   "template": "关于这个话题还有哪些细节？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "日本科学家成功研发",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a75db920000_knowledge_exploration_983",
+   "knowledge_id": "6a75db92000000002202feba",
+   "question": "想多了解下这个知识",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "绝大多数猫咪",
+    "死因是慢性肾",
+    "主因是其体内"
+   ],
+   "source": "generated_from_real",
+   "template": "想多了解下这个知识",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "日本科学家成功研发",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a4f80be0000_summary_718",
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "question": "帮我总结一下这篇笔记的核心内容",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "郑老牌木瓜牛",
+    "奶位于高雄六",
+    "合夜市"
+   ],
+   "source": "generated_from_real",
+   "template": "帮我总结一下这篇笔记的核心内容",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "想你想了十四年",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a4f80be0000_source_grounding_304",
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "question": "这个知识具体有哪些关键信息？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "郑老牌木瓜牛",
+    "奶位于高雄六",
+    "合夜市"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识具体有哪些关键信息？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "想你想了十四年",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a4f80be0000_decision_support_680",
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "question": "这个知识有什么参考价值？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "郑老牌木瓜牛",
+    "奶位于高雄六",
+    "合夜市"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识有什么参考价值？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "想你想了十四年",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a4f80be0000_decision_support_527",
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "question": "看完这个知识，接下来该怎么行动？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "郑老牌木瓜牛",
+    "奶位于高雄六",
+    "合夜市"
+   ],
+   "source": "generated_from_real",
+   "template": "看完这个知识，接下来该怎么行动？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "想你想了十四年",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a4f80be0000_knowledge_exploration_950",
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "question": "这个话题具体是怎么说的？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "郑老牌木瓜牛",
+    "奶位于高雄六",
+    "合夜市"
+   ],
+   "source": "generated_from_real",
+   "template": "这个话题具体是怎么说的？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "想你想了十四年",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a4f80be0000_knowledge_exploration_316",
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "question": "这个知识里还有什么我没注意到的？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "郑老牌木瓜牛",
+    "奶位于高雄六",
+    "合夜市"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识里还有什么我没注意到的？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "想你想了十四年",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "68da9afb0000_summary_713",
+   "knowledge_id": "68da9afb0000000013011d33",
+   "question": "这篇笔记大概讲了什么？",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "交通路径",
+    "高雄机场",
+    "捷运红线至高"
+   ],
+   "source": "generated_from_real",
+   "template": "这篇笔记大概讲了什么？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "如何从高雄机场去台南",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "68da9afb0000_source_grounding_592",
+   "knowledge_id": "68da9afb0000000013011d33",
+   "question": "这篇内容有什么值得注意的细节？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "交通路径",
+    "高雄机场",
+    "捷运红线至高"
+   ],
+   "source": "generated_from_real",
+   "template": "这篇内容有什么值得注意的细节？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "如何从高雄机场去台南",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "68da9afb0000_decision_support_799",
+   "knowledge_id": "68da9afb0000000013011d33",
+   "question": "这个内容能帮我做出更好的判断吗？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "交通路径",
+    "高雄机场",
+    "捷运红线至高"
+   ],
+   "source": "generated_from_real",
+   "template": "这个内容能帮我做出更好的判断吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "如何从高雄机场去台南",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "68da9afb0000_decision_support_280",
+   "knowledge_id": "68da9afb0000000013011d33",
+   "question": "这个信息对我做决定有帮助吗？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "交通路径",
+    "高雄机场",
+    "捷运红线至高"
+   ],
+   "source": "generated_from_real",
+   "template": "这个信息对我做决定有帮助吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "如何从高雄机场去台南",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "68da9afb0000_knowledge_exploration_239",
+   "knowledge_id": "68da9afb0000000013011d33",
+   "question": "这个话题的背景是什么？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "交通路径",
+    "高雄机场",
+    "捷运红线至高"
+   ],
+   "source": "generated_from_real",
+   "template": "这个话题的背景是什么？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "如何从高雄机场去台南",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "68da9afb0000_knowledge_exploration_33",
+   "knowledge_id": "68da9afb0000000013011d33",
+   "question": "关于这个话题还有哪些细节？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "交通路径",
+    "高雄机场",
+    "捷运红线至高"
+   ],
+   "source": "generated_from_real",
+   "template": "关于这个话题还有哪些细节？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "如何从高雄机场去台南",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7618ea0000_summary_790",
+   "knowledge_id": "6a7618ea0000000021020248",
+   "question": "帮我看看这篇内容说了什么",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "杨和苏脚趾头",
+    "被切掉一半",
+    "大拇指已截除"
+   ],
+   "source": "generated_from_real",
+   "template": "帮我看看这篇内容说了什么",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "哈圈刚刚",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7618ea0000_source_grounding_349",
+   "knowledge_id": "6a7618ea0000000021020248",
+   "question": "详细说说这篇的内容",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "杨和苏脚趾头",
+    "被切掉一半",
+    "大拇指已截除"
+   ],
+   "source": "generated_from_real",
+   "template": "详细说说这篇的内容",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "哈圈刚刚",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7618ea0000_decision_support_654",
+   "knowledge_id": "6a7618ea0000000021020248",
+   "question": "基于这个知识，我该从哪入手？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "杨和苏脚趾头",
+    "被切掉一半",
+    "大拇指已截除"
+   ],
+   "source": "generated_from_real",
+   "template": "基于这个知识，我该从哪入手？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "哈圈刚刚",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7618ea0000_knowledge_exploration_983",
+   "knowledge_id": "6a7618ea0000000021020248",
+   "question": "想多了解下这个知识",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "杨和苏脚趾头",
+    "被切掉一半",
+    "大拇指已截除"
+   ],
+   "source": "generated_from_real",
+   "template": "想多了解下这个知识",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "哈圈刚刚",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7692b10000_summary_195",
+   "knowledge_id": "6a7692b10000000033011882",
+   "question": "能简单概括下这个知识吗？",
+   "case_type": "summary",
+   "mode": "context",
+   "expected_topics": [
+    "主打宽松版型",
+    "阔腿牛仔裤",
+    "工装裤"
+   ],
+   "source": "generated_from_real",
+   "template": "能简单概括下这个知识吗？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "我的夏日穿搭记录",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7692b10000_source_grounding_184",
+   "knowledge_id": "6a7692b10000000033011882",
+   "question": "这个知识里有哪些具体的点？",
+   "case_type": "source_grounding",
+   "mode": "context",
+   "expected_topics": [
+    "主打宽松版型",
+    "阔腿牛仔裤",
+    "工装裤"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识里有哪些具体的点？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "我的夏日穿搭记录",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7692b10000_decision_support_680",
+   "knowledge_id": "6a7692b10000000033011882",
+   "question": "这个知识有什么参考价值？",
+   "case_type": "decision_support",
+   "mode": "context",
+   "expected_topics": [
+    "主打宽松版型",
+    "阔腿牛仔裤",
+    "工装裤"
+   ],
+   "source": "generated_from_real",
+   "template": "这个知识有什么参考价值？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "我的夏日穿搭记录",
+   "title_overlap_ratio": 0.0
+  },
+  {
+   "id": "6a7692b10000_knowledge_exploration_950",
+   "knowledge_id": "6a7692b10000000033011882",
+   "question": "这个话题具体是怎么说的？",
+   "case_type": "knowledge_exploration",
+   "mode": "context",
+   "expected_topics": [
+    "主打宽松版型",
+    "阔腿牛仔裤",
+    "工装裤"
+   ],
+   "source": "generated_from_real",
+   "template": "这个话题具体是怎么说的？",
+   "quality_checked": false,
+   "case_status": "pending",
+   "topic": "我的夏日穿搭记录",
+   "title_overlap_ratio": 0.0
+  }
+ ]
+}

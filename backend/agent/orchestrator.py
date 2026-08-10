@@ -41,6 +41,10 @@ class AgentOrchestrator:
         self.memory = MemoryClient()
         self.prompt_builder = PromptBuilder()
         self.evaluator = Evaluator()
+        # Context Router（Phase 3.4b: selective injection）
+        from backend.agent.context_router import ContextRouter
+        self.context_router = ContextRouter()
+        self._last_router_decision = None
 
     def handle(
         self,
@@ -56,8 +60,8 @@ class AgentOrchestrator:
         """
         started = time.time()
 
-        # 0. Knowledge Context Resolver（可选，short-term 任务上下文）
-        context_assets = self._resolve_context(context)
+        # 0. Knowledge Context Resolver + Router 决策（Phase 3.4b: selective injection）
+        context_assets = self._resolve_context(context, query)
 
         # 1. 检索 knowledge
         sources = self.retriever.retrieve(query)
@@ -106,17 +110,36 @@ class AgentOrchestrator:
                 # Context 注入追踪（eval 用）
                 "context_applied": context_applied,
                 "context_knowledge_id": context.get("knowledge_id") if context else None,
+                # Context Router 决策追踪（Phase 3.4b）
+                "router": (
+                    {
+                        "should_inject": getattr(self, "_last_router_decision", None).should_inject
+                        if getattr(self, "_last_router_decision", None)
+                        else None,
+                        "score": getattr(self, "_last_router_decision", None).score
+                        if getattr(self, "_last_router_decision", None)
+                        else None,
+                        "reason": getattr(self, "_last_router_decision", None).reason
+                        if getattr(self, "_last_router_decision", None)
+                        else None,
+                    }
+                    if context
+                    else None
+                ),
             },
         }
 
     # ------------------------------------------------------------
-    # Knowledge Context Resolver
+    # Knowledge Context Resolver + Router 决策
     # ------------------------------------------------------------
-    def _resolve_context(self, context: Dict[str, Any] | None) -> List[Dict[str, Any]]:
+    def _resolve_context(self, context: Dict[str, Any] | None, query: str = "") -> List[Dict[str, Any]]:
         """knowledge_id → Knowledge Asset（复用 StorageAdapter，不绕过）
 
         输入: {"knowledge_id": "..."}
-        输出: [asset]（0 或 1 条；缺失/失败 → 空列表 → 忽略 context 继续普通 Chat）
+        流程:
+          1. Resolver: 按 knowledge_id 取 asset（缺失/失败 → 空列表）
+          2. Context Router: 判断 query 与 asset 相关性 → 决定是否注入
+        输出: [asset]（0 或 1 条；Router 拒绝 → 空列表 → 普通 Chat）
         """
         if not context:
             return []
@@ -131,6 +154,16 @@ class AgentOrchestrator:
             card = adapter.get_knowledge_by_note_id(knowledge_id)
             if not card:
                 print(f"[context] WARNING: knowledge_id={knowledge_id} 不存在，忽略 context")
+                return []
+
+            # Context Router 决策（Phase 3.4b: selective injection）
+            decision = self.context_router.should_inject(query, card)
+            self._last_router_decision = decision  # 供 metadata / eval 追踪
+            if not decision.should_inject:
+                print(
+                    f"[router] SKIP injection: knowledge_id={knowledge_id} "
+                    f"score={decision.score:.3f} reason={decision.reason}"
+                )
                 return []
             return [card]
         except Exception as exc:

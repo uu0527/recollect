@@ -1,0 +1,4 @@
+{
+ "description": "人工校准后的稳定回归集（quality_checked=true + case_status=approved）",
+ "cases": []
+}

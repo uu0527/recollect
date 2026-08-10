@@ -1,0 +1,101 @@
+[
+ {
+  "id": "6a7618ea0000_summary_790",
+  "runs": 3,
+  "dims": {
+   "relevance": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   },
+   "grounding": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   },
+   "answerability": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   }
+  }
+ },
+ {
+  "id": "69058a8e0000_summary_713",
+  "runs": 3,
+  "dims": {
+   "relevance": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   },
+   "grounding": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   },
+   "answerability": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   }
+  }
+ },
+ {
+  "id": "69058a8e0000_summary_718",
+  "runs": 3,
+  "dims": {
+   "relevance": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   },
+   "grounding": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   },
+   "answerability": {
+    "values": [
+     5,
+     5,
+     5
+    ],
+    "std": 0.0,
+    "mean": 5.0
+   }
+  }
+ }
+]

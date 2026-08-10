@@ -1,0 +1,115 @@
+{
+ "description": "Context Router decision cases",
+ "cases": [
+  {
+   "id": "69058a8e0000_router_848",
+   "knowledge_id": "69058a8e000000000501005a",
+   "query": "如何优化 React 组件性能？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "67fdfd140000_router_2",
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "query": "Python 和 Go 怎么选？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "690490770000_router_536",
+   "knowledge_id": "6904907700000000030185f5",
+   "query": "怎么做年度预算规划？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "6a7581960000_router_472",
+   "knowledge_id": "6a758196000000003301ab73",
+   "query": "推荐几个适合新手的前端框架",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "6a6e1afd0000_router_933",
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "query": "如何写好一篇技术博客？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "6a75db920000_router_982",
+   "knowledge_id": "6a75db92000000002202feba",
+   "query": "Docker 和 K8s 的区别是什么？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "6a4f80be0000_router_103",
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "query": "如何提升团队协作效率？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "68da9afb0000_router_167",
+   "knowledge_id": "68da9afb0000000013011d33",
+   "query": "什么是最优的数据库索引策略？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "6a7618ea0000_router_972",
+   "knowledge_id": "6a7618ea0000000021020248",
+   "query": "如何设计一个 REST API？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  },
+  {
+   "id": "6a7692b10000_router_323",
+   "knowledge_id": "6a7692b10000000033011882",
+   "query": "面试时如何回答优缺点问题？",
+   "case_type": "irrelevant_context",
+   "mode": "router",
+   "should_inject": false,
+   "source": "generated_from_real",
+   "quality_checked": false,
+   "case_status": "pending"
+  }
+ ]
+}

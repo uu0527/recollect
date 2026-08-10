@@ -1,0 +1,302 @@
+{
+ "69058a8e0000_summary_718": {
+  "case_type": "summary",
+  "question": "帮我总结一下这篇笔记的核心内容",
+  "scores": {}
+ },
+ "69058a8e0000_summary_713": {
+  "case_type": "summary",
+  "question": "这篇笔记大概讲了什么？",
+  "scores": {}
+ },
+ "69058a8e0000_source_grounding_304": {
+  "case_type": "source_grounding",
+  "question": "这个知识具体有哪些关键信息？",
+  "scores": {}
+ },
+ "69058a8e0000_source_grounding_592": {
+  "case_type": "source_grounding",
+  "question": "这篇内容有什么值得注意的细节？",
+  "scores": {}
+ },
+ "69058a8e0000_decision_support_280": {
+  "case_type": "decision_support",
+  "question": "这个信息对我做决定有帮助吗？",
+  "scores": {}
+ },
+ "69058a8e0000_decision_support_654": {
+  "case_type": "decision_support",
+  "question": "基于这个知识，我该从哪入手？",
+  "scores": {}
+ },
+ "69058a8e0000_knowledge_exploration_33": {
+  "case_type": "knowledge_exploration",
+  "question": "关于这个话题还有哪些细节？",
+  "scores": {}
+ },
+ "69058a8e0000_knowledge_exploration_983": {
+  "case_type": "knowledge_exploration",
+  "question": "想多了解下这个知识",
+  "scores": {}
+ },
+ "67fdfd140000_summary_790": {
+  "case_type": "summary",
+  "question": "帮我看看这篇内容说了什么",
+  "scores": {}
+ },
+ "67fdfd140000_summary_195": {
+  "case_type": "summary",
+  "question": "能简单概括下这个知识吗？",
+  "scores": {}
+ },
+ "67fdfd140000_source_grounding_349": {
+  "case_type": "source_grounding",
+  "question": "详细说说这篇的内容",
+  "scores": {}
+ },
+ "67fdfd140000_source_grounding_184": {
+  "case_type": "source_grounding",
+  "question": "这个知识里有哪些具体的点？",
+  "scores": {}
+ },
+ "67fdfd140000_decision_support_680": {
+  "case_type": "decision_support",
+  "question": "这个知识有什么参考价值？",
+  "scores": {}
+ },
+ "67fdfd140000_decision_support_527": {
+  "case_type": "decision_support",
+  "question": "看完这个知识，接下来该怎么行动？",
+  "scores": {}
+ },
+ "67fdfd140000_knowledge_exploration_950": {
+  "case_type": "knowledge_exploration",
+  "question": "这个话题具体是怎么说的？",
+  "scores": {}
+ },
+ "67fdfd140000_knowledge_exploration_316": {
+  "case_type": "knowledge_exploration",
+  "question": "这个知识里还有什么我没注意到的？",
+  "scores": {}
+ },
+ "690490770000_summary_718": {
+  "case_type": "summary",
+  "question": "帮我总结一下这篇笔记的核心内容",
+  "scores": {}
+ },
+ "690490770000_source_grounding_304": {
+  "case_type": "source_grounding",
+  "question": "这个知识具体有哪些关键信息？",
+  "scores": {}
+ },
+ "690490770000_decision_support_799": {
+  "case_type": "decision_support",
+  "question": "这个内容能帮我做出更好的判断吗？",
+  "scores": {}
+ },
+ "690490770000_decision_support_280": {
+  "case_type": "decision_support",
+  "question": "这个信息对我做决定有帮助吗？",
+  "scores": {}
+ },
+ "690490770000_knowledge_exploration_239": {
+  "case_type": "knowledge_exploration",
+  "question": "这个话题的背景是什么？",
+  "scores": {}
+ },
+ "690490770000_knowledge_exploration_33": {
+  "case_type": "knowledge_exploration",
+  "question": "关于这个话题还有哪些细节？",
+  "scores": {}
+ },
+ "6a7581960000_summary_713": {
+  "case_type": "summary",
+  "question": "这篇笔记大概讲了什么？",
+  "scores": {}
+ },
+ "6a7581960000_source_grounding_592": {
+  "case_type": "source_grounding",
+  "question": "这篇内容有什么值得注意的细节？",
+  "scores": {}
+ },
+ "6a7581960000_decision_support_654": {
+  "case_type": "decision_support",
+  "question": "基于这个知识，我该从哪入手？",
+  "scores": {}
+ },
+ "6a7581960000_decision_support_680": {
+  "case_type": "decision_support",
+  "question": "这个知识有什么参考价值？",
+  "scores": {}
+ },
+ "6a7581960000_knowledge_exploration_983": {
+  "case_type": "knowledge_exploration",
+  "question": "想多了解下这个知识",
+  "scores": {}
+ },
+ "6a7581960000_knowledge_exploration_950": {
+  "case_type": "knowledge_exploration",
+  "question": "这个话题具体是怎么说的？",
+  "scores": {}
+ },
+ "6a6e1afd0000_summary_790": {
+  "case_type": "summary",
+  "question": "帮我看看这篇内容说了什么",
+  "scores": {}
+ },
+ "6a6e1afd0000_source_grounding_349": {
+  "case_type": "source_grounding",
+  "question": "详细说说这篇的内容",
+  "scores": {}
+ },
+ "6a6e1afd0000_decision_support_527": {
+  "case_type": "decision_support",
+  "question": "看完这个知识，接下来该怎么行动？",
+  "scores": {}
+ },
+ "6a6e1afd0000_decision_support_799": {
+  "case_type": "decision_support",
+  "question": "这个内容能帮我做出更好的判断吗？",
+  "scores": {}
+ },
+ "6a6e1afd0000_knowledge_exploration_316": {
+  "case_type": "knowledge_exploration",
+  "question": "这个知识里还有什么我没注意到的？",
+  "scores": {}
+ },
+ "6a6e1afd0000_knowledge_exploration_239": {
+  "case_type": "knowledge_exploration",
+  "question": "这个话题的背景是什么？",
+  "scores": {}
+ },
+ "6a75db920000_summary_195": {
+  "case_type": "summary",
+  "question": "能简单概括下这个知识吗？",
+  "scores": {}
+ },
+ "6a75db920000_source_grounding_184": {
+  "case_type": "source_grounding",
+  "question": "这个知识里有哪些具体的点？",
+  "scores": {}
+ },
+ "6a75db920000_decision_support_280": {
+  "case_type": "decision_support",
+  "question": "这个信息对我做决定有帮助吗？",
+  "scores": {}
+ },
+ "6a75db920000_decision_support_654": {
+  "case_type": "decision_support",
+  "question": "基于这个知识，我该从哪入手？",
+  "scores": {}
+ },
+ "6a75db920000_knowledge_exploration_33": {
+  "case_type": "knowledge_exploration",
+  "question": "关于这个话题还有哪些细节？",
+  "scores": {}
+ },
+ "6a75db920000_knowledge_exploration_983": {
+  "case_type": "knowledge_exploration",
+  "question": "想多了解下这个知识",
+  "scores": {}
+ },
+ "6a4f80be0000_summary_718": {
+  "case_type": "summary",
+  "question": "帮我总结一下这篇笔记的核心内容",
+  "scores": {}
+ },
+ "6a4f80be0000_source_grounding_304": {
+  "case_type": "source_grounding",
+  "question": "这个知识具体有哪些关键信息？",
+  "scores": {}
+ },
+ "6a4f80be0000_decision_support_680": {
+  "case_type": "decision_support",
+  "question": "这个知识有什么参考价值？",
+  "scores": {}
+ },
+ "6a4f80be0000_decision_support_527": {
+  "case_type": "decision_support",
+  "question": "看完这个知识，接下来该怎么行动？",
+  "scores": {}
+ },
+ "6a4f80be0000_knowledge_exploration_950": {
+  "case_type": "knowledge_exploration",
+  "question": "这个话题具体是怎么说的？",
+  "scores": {}
+ },
+ "6a4f80be0000_knowledge_exploration_316": {
+  "case_type": "knowledge_exploration",
+  "question": "这个知识里还有什么我没注意到的？",
+  "scores": {}
+ },
+ "68da9afb0000_summary_713": {
+  "case_type": "summary",
+  "question": "这篇笔记大概讲了什么？",
+  "scores": {}
+ },
+ "68da9afb0000_source_grounding_592": {
+  "case_type": "source_grounding",
+  "question": "这篇内容有什么值得注意的细节？",
+  "scores": {}
+ },
+ "68da9afb0000_decision_support_799": {
+  "case_type": "decision_support",
+  "question": "这个内容能帮我做出更好的判断吗？",
+  "scores": {}
+ },
+ "68da9afb0000_decision_support_280": {
+  "case_type": "decision_support",
+  "question": "这个信息对我做决定有帮助吗？",
+  "scores": {}
+ },
+ "68da9afb0000_knowledge_exploration_239": {
+  "case_type": "knowledge_exploration",
+  "question": "这个话题的背景是什么？",
+  "scores": {}
+ },
+ "68da9afb0000_knowledge_exploration_33": {
+  "case_type": "knowledge_exploration",
+  "question": "关于这个话题还有哪些细节？",
+  "scores": {}
+ },
+ "6a7618ea0000_summary_790": {
+  "case_type": "summary",
+  "question": "帮我看看这篇内容说了什么",
+  "scores": {}
+ },
+ "6a7618ea0000_source_grounding_349": {
+  "case_type": "source_grounding",
+  "question": "详细说说这篇的内容",
+  "scores": {}
+ },
+ "6a7618ea0000_decision_support_654": {
+  "case_type": "decision_support",
+  "question": "基于这个知识，我该从哪入手？",
+  "scores": {}
+ },
+ "6a7618ea0000_knowledge_exploration_983": {
+  "case_type": "knowledge_exploration",
+  "question": "想多了解下这个知识",
+  "scores": {}
+ },
+ "6a7692b10000_summary_195": {
+  "case_type": "summary",
+  "question": "能简单概括下这个知识吗？",
+  "scores": {}
+ },
+ "6a7692b10000_source_grounding_184": {
+  "case_type": "source_grounding",
+  "question": "这个知识里有哪些具体的点？",
+  "scores": {}
+ },
+ "6a7692b10000_decision_support_680": {
+  "case_type": "decision_support",
+  "question": "这个知识有什么参考价值？",
+  "scores": {}
+ },
+ "6a7692b10000_knowledge_exploration_950": {
+  "case_type": "knowledge_exploration",
+  "question": "这个话题具体是怎么说的？",
+  "scores": {}
+ }
+}
