@@ -162,6 +162,16 @@
   // ============================================================
   // Floating Chatbot
   // ============================================================
+  // 点击 FAB → 打开 AI Assistant 对话窗口（跳转页面并聚焦输入）
+  window.openAssistant = function () {
+    switchView("assistant");
+    const input = document.getElementById("assistantInput");
+    if (input) {
+      input.focus();
+      input.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  };
+
   window.toggleChatbot = function () {
     const panel = document.getElementById("chatbotPanel");
     const open = panel.classList.toggle("open");
