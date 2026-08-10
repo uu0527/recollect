@@ -45,6 +45,10 @@ class AgentOrchestrator:
         from backend.agent.context_router import ContextRouter
         self.context_router = ContextRouter()
         self._last_router_decision = None
+        self._last_context_request = False
+        # Conversation Log（Alpha MVP）
+        from backend.agent.conversation_log import ConversationLogger
+        self.conversation_logger = ConversationLogger()
 
     def handle(
         self,
@@ -61,6 +65,7 @@ class AgentOrchestrator:
         started = time.time()
 
         # 0. Knowledge Context Resolver + Router 决策（Phase 3.4b: selective injection）
+        self._last_context_request = bool(context and context.get("knowledge_id"))
         context_assets = self._resolve_context(context, query)
 
         # 1. 检索 knowledge
@@ -96,6 +101,17 @@ class AgentOrchestrator:
             mode="context" if context else "plain",
             context_applied=context_applied,
             knowledge_id=(context or {}).get("knowledge_id", "") if context else "",
+        )
+
+        # 5.5 Conversation Log（Alpha MVP: 为 Analysis Skill 预留数据接口）
+        self._log_conversation(
+            query=query,
+            session_id=session_id,
+            answer=answer,
+            sources=sources,
+            context_applied=context_applied,
+            latency_ms=latency_ms,
+            llm_info=llm_info,
         )
 
         return {
@@ -169,6 +185,36 @@ class AgentOrchestrator:
         except Exception as exc:
             print(f"[context] WARNING: Knowledge Context 解析失败: {exc}")
             return []  # 查询失败不阻断用户请求
+
+    # ------------------------------------------------------------
+    # Conversation Log（Alpha MVP）
+    # ------------------------------------------------------------
+    def _log_conversation(
+        self,
+        query: str,
+        session_id: str | None,
+        answer: str,
+        sources: List[Dict[str, Any]],
+        context_applied: bool,
+        latency_ms: int,
+        llm_info: Dict[str, Any],
+    ) -> None:
+        """记录一轮对话（失败静默，为未来 Analysis Skill 提供数据）"""
+        decision = self._last_router_decision
+        self.conversation_logger.log(
+            {
+                "session_id": session_id,
+                "query": query,
+                "answer": answer,
+                "sources": sources,
+                "retrieved_context": bool(self._last_context_request),
+                "router_decision": decision.should_inject if decision else None,
+                "router_score": decision.score if decision else None,
+                "tokens": llm_info.get("token_usage", {}).get("total_tokens", 0),
+                "latency_ms": latency_ms,
+                "model": llm_info.get("model", ""),
+            }
+        )
 
     # ------------------------------------------------------------
     # LLM 调用（复用 pipeline/_llm/router，不新增模型体系）

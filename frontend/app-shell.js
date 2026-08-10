@@ -135,6 +135,24 @@
     return parts.join(" · ");
   }
 
+  // Alpha MVP: 构建用户可见的 meta（含回答依据标识）
+  function buildMeta(md, sources) {
+    if (!md) return "";
+    const parts = [];
+    // 回答依据: 基于知识 vs 通用
+    const router = md.router;
+    if (router && router.should_inject) {
+      parts.push("基于知识回答");
+    } else if (md.context_applied) {
+      parts.push("基于知识回答");
+    } else if (md.context_knowledge_id) {
+      parts.push("通用回答");
+    }
+    const m = metaSummary(md);
+    if (m) parts.push(m);
+    return parts.join(" · ");
+  }
+
   // ============================================================
   // Knowledge Context Panel
   // ============================================================
@@ -199,17 +217,19 @@
     try {
       const data = await callAgent(q, assistantSessionId);
       typing.remove();
-      const meta = metaSummary(data.metadata);
+      const meta = buildMeta(data.metadata, data.sources);
       appendMessage(msgBox, "assistant", data.answer || "（空回答）", data.sources || [], meta);
     } catch (err) {
       typing.remove();
+      // 友好错误：不暴露 stack trace / 内部路径 / 技术细节
       appendMessage(
         msgBox,
         "assistant",
-        "⚠️ 调用 Agent 失败：" + err.message + "。请确认后端已启动（uvicorn backend.main:app --port 8000）。",
+        "抱歉，暂时无法回答。请检查后端服务是否已启动，然后重试。",
         [],
         null
       );
+      console.warn("[chat] 调用失败（仅开发者可见）:", err.message);
     }
     btn.disabled = false;
     input.focus();
@@ -248,10 +268,11 @@
     try {
       const data = await callAgent(q, assistantSessionId);
       typing.remove();
-      appendMessage(body, "assistant", data.answer || "（空回答）", data.sources || [], metaSummary(data.metadata));
+      appendMessage(body, "assistant", data.answer || "（空回答）", data.sources || [], buildMeta(data.metadata, data.sources));
     } catch (err) {
       typing.remove();
-      appendMessage(body, "assistant", "⚠️ " + err.message, [], null);
+      appendMessage(body, "assistant", "抱歉，暂时无法回答，请稍后重试。", [], null);
+      console.warn("[chatbot] 调用失败（仅开发者可见）:", err.message);
     }
   };
 
