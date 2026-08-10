@@ -86,31 +86,42 @@ class Retriever:
 
     @staticmethod
     def _tokenize(text: str) -> List[str]:
-        """简单分词：中文按字二元组 + 英文单词"""
+        """简单分词：中文按词（2-4 字滑窗）+ 英文单词"""
         tokens = set()
+        # 英文单词
         for word in text.lower().split():
             if word.isascii() and len(word) > 1:
                 tokens.add(word)
-        # 中文 bigram
+        # 中文：用 2/3 字滑窗（避免单个 bigram 误匹配）
         cn = [ch for ch in text if "\u4e00" <= ch <= "\u9fff"]
-        for i in range(len(cn) - 1):
-            tokens.add(cn[i] + cn[i + 1])
+        for n in (3, 2):
+            for i in range(len(cn) - n + 1):
+                tokens.add("".join(cn[i:i + n]))
         return list(tokens)
 
     def _score_card(self, card: Dict, q_terms: List[str]) -> float:
-        """打分：命中 title(×3) / tldr(×2) / tags(×2)"""
+        """打分：精确命中 title(×3) / tldr(×2) / tags(×2)。
+        要求至少 2 个不同词命中（避免单个 bigram 误匹配）。"""
         title = card.get("title", "") or ""
         tldr = card.get("tldr", "") or ""
         tags = " ".join(card.get("tags", []) or [])
+        hit_terms = set()
         score = 0.0
         for t in q_terms:
+            hit = False
             if t in title:
                 score += 3
+                hit = True
             if t in tldr:
                 score += 2
+                hit = True
             if t in tags:
                 score += 2
-        return score
+                hit = True
+            if hit:
+                hit_terms.add(t)
+        # 至少 2 个不同词命中才返回（相关性门槛）
+        return score if len(hit_terms) >= 2 else 0.0
 
     @staticmethod
     def _to_source(card: Dict) -> Dict[str, Any]:

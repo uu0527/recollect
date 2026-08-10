@@ -30,6 +30,10 @@ class Evaluator:
         sources: List[Dict[str, Any]],
         answer: str,
         latency_ms: int,
+        model: str = "",
+        token_usage: Dict[str, int] | None = None,
+        prompt_length: int = 0,
+        response_length: int = 0,
     ) -> None:
         """记录一次 Agent 调用"""
         try:
@@ -41,6 +45,10 @@ class Evaluator:
                 "sources": [s.get("note_id", "") for s in sources],
                 "answer_preview": answer[:200],
                 "latency_ms": latency_ms,
+                "model": model,
+                "token_usage": token_usage or {},
+                "prompt_length": prompt_length,
+                "response_length": response_length,
             }
             with open(RUNS_FILE, "a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
