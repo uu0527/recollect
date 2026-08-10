@@ -31,6 +31,10 @@ lxml>=4.9.0
 # ---------- Supabase Storage Adapter（Alpha MVP P0）----------
 supabase>=2.0.0
 
+# ---------- Agent Backend（FastAPI）----------
+fastapi>=0.110
+uvicorn[standard]>=0.29
+
 # ---------- P6 RAG ----------
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
