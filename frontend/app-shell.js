@@ -19,6 +19,7 @@
     "home": "view-home",
     "library-saved": "view-library-saved",
     "library-knowledge": "view-library-knowledge",
+    "saved-detail": "view-saved-detail",
     "assistant": "view-assistant",
     "settings": "view-settings",
   };

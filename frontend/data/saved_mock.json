@@ -6,7 +6,10 @@
    "source": "https://www.xiaohongshu.com/explore/mvp_verify_001",
    "collected_at": "2026-08-08 13:00:00",
    "author": "验证用户",
-   "status": "Processing"
+   "content": "这是一条用于验证 Supabase 真实写入的事件，正文足够长以便通过 ingest 过滤。",
+   "images": [],
+   "status": "Processing",
+   "env": "prod"
   },
   {
    "note_id": "6954c9ad0000000022022115",
@@ -14,7 +17,14 @@
    "source": "https://www.xiaohongshu.com/explore/6954c9ad0000000022022115?xsec_token=ABmEOUkXJ-ASXXf1-xYWUTdsYTbfizXV2jaNxMcJxVUsY=&xsec_source=pc_user&source=web_user_page",
    "collected_at": "2026-08-08 06:32:54",
    "author": "海南雞飯多加飯",
-   "status": "Processing"
+   "content": "31.12.2025\n#台湾旅游 #台湾美食 #台湾自由行",
+   "images": [
+    "https://sns-webpic-qc.xhscdn.com/202608081432/1fcf93a5cb7f85613b80aec65f9dbceb/notes_uhdr/1040g3qo31qofqu4c7oc05nqcm5i0bjragqe3cr0!nd_dft_wlteh_webp_3",
+    "https://sns-webpic-qc.xhscdn.com/202608081432/983a88eb882f317cb55c98eac1307d02/notes_uhdr/1040g3qo31qofqu4c7o9g5nqcm5i0bjrajp91un8!nd_dft_wlteh_webp_3",
+    "http://sns-webpic-qc.xhscdn.com/202608081432/983a88eb882f317cb55c98eac1307d02/notes_uhdr/1040g3qo31qofqu4c7o9g5nqcm5i0bjrajp91un8!nd_dft_wlteh_webp_3"
+   ],
+   "status": "Processing",
+   "env": "prod"
   },
   {
    "note_id": "6a6d5ba10000000008009c00",
@@ -22,7 +32,12 @@
    "source": "https://www.xiaohongshu.com/explore/6a6d5ba10000000008009c00?xsec_token=ABMO7cCKdnrH0vxi0Balmf-ubXPrc_9EcXMF6JeZQcr8U=&xsec_source=pc_feed",
    "collected_at": "2026-08-08 07:34:05",
    "author": "小宝的存钱罐",
-   "status": "Processing"
+   "content": "谁花6k就得到这个都会破防吧，看起来真就一点也不想理视频对面的粉丝\n\t\n#不要推卸责任 #张元英 #张元英签售 #签售",
+   "images": [
+    "https://picasso-static.xiaohongshu.com/fe-platform/09c136c01bac91a3eb7284b6e107e4714d7c06da.png"
+   ],
+   "status": "Processing",
+   "env": "prod"
   },
   {
    "note_id": "6a76a50f000000000502aa7b",
@@ -30,9 +45,50 @@
    "source": "https://www.xiaohongshu.com/explore/6a76a50f000000000502aa7b?xsec_token=ABVKdt5hz3EZYVE8DpkvkRGcGKhQnGICYIBvoIGH2OyfU=&xsec_source=pc_feed",
    "collected_at": "2026-08-08 07:47:56",
    "author": "不吃香菜",
-   "status": "Processing"
+   "content": "网易互娱一名前主管，因为盯上了玩家长期不用的游戏账号，把自己送上了被告席。\n\t\n据近日公开的裁判文书，刘某甲1990年出生，2013年进入广州一家游戏公司工作，后来担任客户服务交付部账户管理组审核主管。由于负责账户修复、权限核验等工作，他拥有游戏账号的后台操作权限。涉案游戏为网易旗下《梦幻西游》，公开报道据运营主体及业务关系将其身份指向网易互娱前员工。\n\t\n从2019年开始，刘某甲把手中的权限用在了“沉默账号”上。\n\t\n所谓沉默账号，就是长期无人登录的游戏账户。2019年至2023年的四年间，刘某甲利用审核、修复账户的职务便利，绕过公司内部流程，先后拿到了171个《梦幻西游》沉默账号的登录权限。\n\t\n拿到账号后，他将里面的游戏角色、稀有道具、虚拟货币拆开，通过线上渠道陆续出售。\n\t\n直到后台异常操作被公司发现并报警，这门持续四年的“生意”才停下来。警方随后调取了支付宝、银行卡、平台交易流水以及后台操作记录。经审计，刘某甲累计违法所得达到1736068.87元。\n\t\n2024年3月13日，刘某甲被警方抓获并刑事拘留，之后被取保候审。案件办理期间，其家属退赔了全部173万余元违法所得，并取得被害公司的谅解。\n\t\n广州市天河区人民法院审理认为，刘某甲利用企业赋予的工作权限获取游戏账号数据并出售牟利，已经构成非法获取计算机信息系统数据罪。\n\t\n法院最终判处刘某甲有期徒刑三年，缓刑三年，并处罚金2万元，两部涉案华为手机同时被没收。刘某甲认罪认罚、如实供述，且已经全额退赔并取得公司谅解，是此次获缓刑的重要原因。\n#互联网大厂",
+   "images": [
+    "https://sns-webpic-qc.xhscdn.com/202608081547/a4bebba0651ff9e34ee3b663e54cf495/notes_pre_post/1040g3k8323jhra867u7g5palaq0glah6fea6710!nd_dft_wlteh_webp_3",
+    "https://sns-webpic-qc.xhscdn.com/202608081547/d18ca71d0a2e74da600a8d4b46efa03a/notes_pre_post/1040g3k8323jhra867u805palaq0glah6crptan8!nd_dft_wlteh_webp_3",
+    "https://sns-webpic-qc.xhscdn.com/202608081547/c6f928407e7bea50b667b617ac1e1560/notes_pre_post/1040g3k8323jhra867u705palaq0glah6hj0rbto!nd_dft_wlteh_webp_3"
+   ],
+   "status": "Processing",
+   "env": "prod"
+  },
+  {
+   "note_id": "6955a1b20000000002009d01",
+   "title": "日本科学家成功研发！猫寿命或延长至30年",
+   "source": "https://www.xiaohongshu.com/explore/demo_knowledge_001",
+   "collected_at": "2026-08-09 09:12:33",
+   "author": "科技前沿",
+   "content": "日本东京大学团队研发猫专用AIM蛋白注射剂，有望将猫平均寿命从15年延长至30年，目标2027年上市。",
+   "images": [],
+   "status": "Knowledge Ready",
+   "env": "prod"
+  },
+  {
+   "note_id": "web_note_001",
+   "title": "Vercel 部署文档阅读笔记",
+   "source": "https://vercel.com/docs/deployments/overview",
+   "collected_at": "2026-08-08 15:02:10",
+   "author": "",
+   "content": "Vercel 支持 Git 集成自动部署，预览部署与生产部署分离。",
+   "images": [],
+   "status": "Captured",
+   "env": "prod"
+  },
+  {
+   "note_id": "test_synthetic_001",
+   "title": "AI合成测试事件",
+   "source": "https://test.local/synthetic",
+   "collected_at": "2026-08-07 00:00:00",
+   "author": "test-bot",
+   "content": "这是一个合成测试数据。",
+   "images": [],
+   "status": "Processing",
+   "env": "test"
   }
  ],
  "generated_at": "2026-08-10",
- "source": "data/events/storage_events.jsonl"
+ "source": "data/events/storage_events.jsonl",
+ "note": "env=test 条目由前端过滤规则排除"
 }
