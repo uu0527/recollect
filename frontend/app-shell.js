@@ -20,6 +20,7 @@
     "library-saved": "view-library-saved",
     "library-knowledge": "view-library-knowledge",
     "saved-detail": "view-saved-detail",
+    "knowledge-detail": "view-knowledge-detail",
     "assistant": "view-assistant",
     "settings": "view-settings",
   };
@@ -38,9 +39,9 @@
       const el = document.getElementById(id);
       if (el) el.classList.toggle("active", key === view);
     });
-    // Knowledge 视图加载时触发渲染（app.js 提供 renderAll）
-    if (view === "library-knowledge" && typeof window.renderLibrary === "function") {
-      window.renderLibrary();
+    // Knowledge 视图加载时触发渲染（knowledge.js 提供 loadKnowledge）
+    if (view === "library-knowledge" && window.RECOLLECT_KNOWLEDGE && typeof window.RECOLLECT_KNOWLEDGE.loadKnowledge === "function") {
+      window.RECOLLECT_KNOWLEDGE.loadKnowledge();
     }
     // Saved 视图加载时触发渲染（saved.js 提供 loadSaved）
     if (view === "library-saved" && window.RECOLLECT_SAVED && typeof window.RECOLLECT_SAVED.loadSaved === "function") {

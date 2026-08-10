@@ -1,0 +1,56 @@
+{
+  "items": [
+    {
+      "knowledge_id": "kn_001",
+      "title": "AI Agent Evaluation",
+      "summary": "AI Agent evaluation focuses on continuous feedback loops: defining task-level metrics, measuring tool-call accuracy, tracking cost/latency, and iterating through eval harnesses. Good agents are evaluated on reliability and decision quality, not just final output.",
+      "tags": ["AI", "Agent", "Evaluation"],
+      "topic": "AI",
+      "concepts": ["Feedback Loop", "Eval Harness", "Reliability"],
+      "source_saved_ids": ["6a6d5ba10000000008009c00", "6954c9ad0000000022022115", "6a76a50f000000000502aa7b"],
+      "created_at": "2026-08-09 10:00:00"
+    },
+    {
+      "knowledge_id": "kn_002",
+      "title": "Pet Longevity Research - AIM Protein",
+      "summary": "A Tokyo university team developed a cat-specific AIM protein injection that may extend average cat lifespan from 15 to 30 years, targeting a 2027 market launch. The mechanism centers on AIM protein's role in immune regulation and organ protection.",
+      "tags": ["AI", "Health", "Science"],
+      "topic": "AI",
+      "concepts": ["AIM Protein", "Longevity", "2027 Launch"],
+      "source_saved_ids": ["6955a1b20000000002009d01"],
+      "created_at": "2026-08-09 09:30:00"
+    },
+    {
+      "knowledge_id": "kn_003",
+      "title": "Modern Deployment Workflow",
+      "summary": "Vercel supports Git-integrated automatic deployments with preview environments separated from production. Environment variables and framework presets simplify the release pipeline for frontend teams.",
+      "tags": ["Product", "Deployment"],
+      "topic": "Product",
+      "concepts": ["Preview Deploy", "Git Integration", "CI/CD"],
+      "source_saved_ids": ["web_note_001"],
+      "created_at": "2026-08-08 15:30:00"
+    },
+    {
+      "knowledge_id": "kn_004",
+      "title": "Content Quality Signals in Social Platforms",
+      "summary": "High-virality social content often combines personal storytelling with visual consistency and hashtag strategy. Understanding audience sentiment from comment engagement helps refine content direction.",
+      "tags": ["Product", "Social"],
+      "topic": "Product",
+      "concepts": ["Engagement", "Hashtag Strategy", "Visual Consistency"],
+      "source_saved_ids": ["6954c9ad0000000022022115"],
+      "created_at": "2026-08-08 07:00:00"
+    },
+    {
+      "knowledge_id": "kn_005",
+      "title": "Digital Asset Security Risks",
+      "summary": "Online account security extends beyond passwords: insider threats, dormant-account hijacking, and recovery-process gaps can expose user assets. Strong audit trails and anomaly detection are critical for trust.",
+      "tags": ["Design", "Security"],
+      "topic": "Design",
+      "concepts": ["Insider Threat", "Anomaly Detection", "Trust"],
+      "source_saved_ids": ["6a76a50f000000000502aa7b"],
+      "created_at": "2026-08-08 08:00:00"
+    }
+  ],
+  "generated_at": "2026-08-10",
+  "note": "mock knowledge assets derived from frontend/data/saved_mock.json via source_saved_ids"
+}

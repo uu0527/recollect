@@ -201,20 +201,9 @@ function renderCards() {
   });
 }
 
-// ===== Library 渲染（由 app-shell 的 Knowledge 视图触发）=====
+// ===== Library 渲染（已由 knowledge.js 接管 Knowledge 视图，保留函数供旧接口兼容）=====
 function renderLibrary() {
-  renderStats();
-  renderFilters();
-  renderCards();
+  // 新 Knowledge view 使用 knowledge.js 的 loadKnowledge，旧元素已不存在，
+  // 此函数仅作兼容占位，不再直接渲染。
 }
 
-// ===== 初始化：Shell 已接管页面切换，仅当 Knowledge 视图激活时渲染 =====
-if (window.RECOLLECT_SHELL) {
-  window.RECOLLECT_SHELL.switchView("library-knowledge");
-  renderLibrary();
-} else {
-  // 旧版独立页面兜底
-  renderStats();
-  renderFilters();
-  renderCards();
-}

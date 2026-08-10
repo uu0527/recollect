@@ -76,6 +76,8 @@
     const set = new Set(noteIds);
     savedItems = savedItems.filter((it) => !set.has(it.note_id));
     deletedIds = deletedIds.concat(noteIds);
+    // 通知 Knowledge 页: Saved 发生变化，需重新校验来源关联
+    window.dispatchEvent(new CustomEvent("recollect:saved-changed"));
   }
 
   // ============================================================
@@ -285,7 +287,9 @@
       b.classList.toggle("active", b.dataset.tab === tab);
     });
     if (tab === "knowledge") {
-      if (typeof window.renderLibrary === "function") window.renderLibrary();
+      if (window.RECOLLECT_KNOWLEDGE && typeof window.RECOLLECT_KNOWLEDGE.loadKnowledge === "function") {
+        window.RECOLLECT_KNOWLEDGE.loadKnowledge();
+      }
     } else {
       loadSaved();
     }
@@ -303,8 +307,10 @@
         return !isTestItem(it); // 测试数据过滤
       });
       renderSaved();
+      return savedItems;
     } catch (err) {
       box.innerHTML = '<div class="empty">加载失败：' + escapeHtml(err.message) + "</div>";
+      return [];
     }
   }
 
@@ -323,7 +329,21 @@
     observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
   }
 
-  window.RECOLLECT_SAVED = { loadSaved: loadSaved, switchLibTab: window.switchLibTab };
+  // 暴露给其他模块（Knowledge 页读取活跃 Saved 做来源关联）
+  function getActiveItems() {
+    return savedItems.slice();
+  }
+
+  function getActiveNoteIds() {
+    return new Set(savedItems.map((it) => it.note_id));
+  }
+
+  window.RECOLLECT_SAVED = {
+    loadSaved: loadSaved,
+    switchLibTab: window.switchLibTab,
+    getActiveItems: getActiveItems,
+    getActiveNoteIds: getActiveNoteIds,
+  };
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

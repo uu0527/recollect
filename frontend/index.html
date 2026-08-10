@@ -204,6 +204,25 @@
   .detail-actions { display: flex; flex-direction: column; gap: 8px; }
   .ai-action-btn { padding: 10px 14px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 7px; font-size: var(--fs-subtitle); font-weight: 500; color: var(--text-2); text-align: center; cursor: pointer; transition: all .15s; }
   .ai-action-btn:hover { border-color: var(--accent); color: var(--text); background: var(--bg); }
+
+  /* ---- Knowledge List ---- */
+  .knowledge-list { display: flex; flex-direction: column; gap: 10px; }
+  .kn-card { padding: 18px 22px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: border-color .15s; }
+  .kn-card:hover { border-color: var(--border-2); }
+  .kn-card h3 { font-size: var(--fs-title); font-weight: 550; letter-spacing: -0.015em; line-height: var(--lh-tight); margin-bottom: 8px; }
+  .kn-summary { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text-2); margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .kn-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .kn-tag { font-size: var(--fs-micro); font-weight: 450; letter-spacing: .01em; padding: 2px 10px; border-radius: 20px; background: var(--bg-soft); border: 1px solid var(--border); color: var(--text-2); }
+  .kn-foot { font-size: var(--fs-caption); color: var(--text-3); }
+
+  /* ---- Knowledge Detail ---- */
+  .kn-sec { margin-top: 22px; }
+  .kn-sources { display: flex; flex-direction: column; gap: 8px; }
+  .kn-source-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 7px; cursor: pointer; transition: border-color .15s; font-size: var(--fs-subtitle); color: var(--text); }
+  .kn-source-item:hover { border-color: var(--border-2); }
+  .kn-source-item .src-arrow { color: var(--text-3); margin-left: auto; }
+  .kn-ask { margin-top: 26px; padding: 12px 16px; background: var(--accent); color: #fff; border: none; border-radius: 7px; font-size: var(--fs-subtitle); font-weight: 500; letter-spacing: -0.005em; text-align: center; cursor: pointer; transition: background .15s; }
+  .kn-ask:hover { background: var(--accent-hover); }
   .saved-status { flex-shrink: 0; }
   .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: var(--fs-caption); font-weight: 500; }
   .status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; }
@@ -315,22 +334,57 @@
       </div>
     </section>
 
-    <!-- Library: Knowledge（复用现有渲染） -->
+    <!-- Library: Knowledge -->
     <section id="view-library-knowledge" class="view">
       <h1>Library</h1>
-      <p class="subtitle">AI 生成的知识卡片</p>
+      <p class="subtitle">AI 整理后的知识资产</p>
       <div class="lib-tabs" id="libTabsK">
         <button class="lib-tab" data-tab="saved" onclick="switchLibTab('saved')">Saved</button>
         <button class="lib-tab active" data-tab="knowledge" onclick="switchLibTab('knowledge')">Knowledge</button>
       </div>
-      <div class="stat-row">
-        <div class="stat"><b id="stat-total">0</b><span>条收藏</span></div>
-        <div class="stat"><b id="stat-cats">0</b><span>个分类</span></div>
-        <div class="stat"><b id="stat-tags">0</b><span>个标签</span></div>
+      <div class="saved-toolbar">
+        <input id="knowledgeSearch" class="saved-search" type="text" placeholder="Search Knowledge…" oninput="onKnowledgeSearch(this.value)" />
+        <div class="saved-filters">
+          <select id="filterTopic" onchange="onKnowledgeFilter()">
+            <option value="">All Topics</option>
+          </select>
+          <select id="filterTag" onchange="onKnowledgeFilter()">
+            <option value="">All Tags</option>
+          </select>
+          <select id="filterKSaved" onchange="onKnowledgeFilter()">
+            <option value="">All Source Saved</option>
+          </select>
+          <select id="filterKTime" onchange="onKnowledgeFilter()">
+            <option value="">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This week</option>
+          </select>
+        </div>
       </div>
-      <div class="filters" id="filters"></div>
-      <div id="cards"></div>
-      <div class="empty" id="empty" style="display:none;">暂无知识卡片</div>
+      <div id="knowledgeList" class="knowledge-list">
+        <div class="empty">加载中…</div>
+      </div>
+    </section>
+
+    <!-- Knowledge Detail -->
+    <section id="view-knowledge-detail" class="view">
+      <button class="btn-back" onclick="backToKnowledge()">← Back to Knowledge</button>
+      <h1 id="knDetailTitle" class="detail-title">—</h1>
+      <div class="detail-sec-title">AI Summary</div>
+      <div id="knDetailSummary" class="detail-para"></div>
+      <div class="kn-sec">
+        <div class="detail-sec-title">Key Concepts</div>
+        <div id="knDetailConcepts" class="kn-tags"></div>
+      </div>
+      <div class="kn-sec">
+        <div class="detail-sec-title">Tags</div>
+        <div id="knDetailTags" class="kn-tags"></div>
+      </div>
+      <div class="kn-sec">
+        <div class="detail-sec-title">Source Saved Items</div>
+        <div id="knDetailSources" class="kn-sources"></div>
+      </div>
+      <div class="kn-ask" onclick="askKnowledgeAgent()">Ask Agent</div>
     </section>
 
     <!-- Saved Detail -->
@@ -396,6 +450,7 @@
 
 <script src="app-shell.js"></script>
 <script src="saved.js"></script>
+<script src="knowledge.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
