@@ -23,6 +23,9 @@ router = APIRouter(tags=["chat"])
 class ChatRequest(BaseModel):
     query: str
     session_id: Optional[str] = None
+    # Knowledge Context（Phase 3.2）：{knowledge_id: str}
+    # 可选；无 context 时保持普通 Chat 行为
+    context: Optional[Dict[str, Any]] = None
 
 
 class ChatResponse(BaseModel):
@@ -37,6 +40,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     result = AgentOrchestrator().handle(
         query=req.query,
         session_id=req.session_id,
+        context=req.context,
     )
     return ChatResponse(
         answer=result["answer"],

@@ -42,19 +42,35 @@ class AgentOrchestrator:
         self.prompt_builder = PromptBuilder()
         self.evaluator = Evaluator()
 
-    def handle(self, query: str, session_id: str | None = None) -> Dict[str, Any]:
-        """处理一次用户请求，返回 {answer, sources, metadata}"""
+    def handle(
+        self,
+        query: str,
+        session_id: str | None = None,
+        context: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """处理一次用户请求，返回 {answer, sources, metadata}
+
+        context（可选）: {"knowledge_id": str} → Knowledge Context 注入
+        - 无 context: 保持普通 Chat（retriever → memory → prompt → LLM）
+        - 有 context: 先 Resolver 取 Knowledge Asset，再注入 prompt
+        """
         started = time.time()
+
+        # 0. Knowledge Context Resolver（可选，short-term 任务上下文）
+        context_assets = self._resolve_context(context)
 
         # 1. 检索 knowledge
         sources = self.retriever.retrieve(query)
 
-        # 2. 用户记忆
+        # 2. 用户记忆（long-term，不受 context 影响）
         memory = self.memory.get_context(session_id=session_id)
 
-        # 3. 构造上下文
+        # 3. 构造上下文（含 Knowledge Context 注入）
         prompt = self.prompt_builder.build(
-            query=query, sources=sources, memory=memory
+            query=query,
+            sources=sources,
+            memory=memory,
+            context_assets=context_assets,
         )
 
         # 4. 真实 LLM 调用（复用 pipeline router；失败降级 mock 不阻断）
@@ -83,8 +99,39 @@ class AgentOrchestrator:
                 "source_count": len(sources),
                 "llm_provider": llm_info.get("provider", "mock"),
                 "token_usage": llm_info.get("token_usage", {}),
+                # Context 注入追踪（eval 用）
+                "context_applied": len(context_assets) > 0,
+                "context_knowledge_id": context.get("knowledge_id") if context else None,
             },
         }
+
+    # ------------------------------------------------------------
+    # Knowledge Context Resolver
+    # ------------------------------------------------------------
+    def _resolve_context(self, context: Dict[str, Any] | None) -> List[Dict[str, Any]]:
+        """knowledge_id → Knowledge Asset（复用 StorageAdapter，不绕过）
+
+        输入: {"knowledge_id": "..."}
+        输出: [asset]（0 或 1 条；缺失/失败 → 空列表 → 忽略 context 继续普通 Chat）
+        """
+        if not context:
+            return []
+        knowledge_id = context.get("knowledge_id")
+        if not knowledge_id:
+            return []
+        try:
+            # 复用 StorageAdapter（get_adapter 按 STORAGE_BACKEND 选择 file/supabase）
+            from collector.context_store.adapters import get_adapter
+            adapter = get_adapter()
+            # knowledge 表以 note_id 为主键；knowledge_id 直接映射 note_id
+            card = adapter.get_knowledge_by_note_id(knowledge_id)
+            if not card:
+                print(f"[context] WARNING: knowledge_id={knowledge_id} 不存在，忽略 context")
+                return []
+            return [card]
+        except Exception as exc:
+            print(f"[context] WARNING: Knowledge Context 解析失败: {exc}")
+            return []  # 查询失败不阻断用户请求
 
     # ------------------------------------------------------------
     # LLM 调用（复用 pipeline/_llm/router，不新增模型体系）
