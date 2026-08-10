@@ -34,8 +34,16 @@ class Evaluator:
         token_usage: Dict[str, int] | None = None,
         prompt_length: int = 0,
         response_length: int = 0,
+        mode: str = "plain",
+        context_applied: bool = False,
+        knowledge_id: str = "",
     ) -> None:
-        """记录一次 Agent 调用"""
+        """记录一次 Agent 调用
+
+        mode: "plain" | "context"（Evaluation 模式标识，兼容旧数据）
+        context_applied: Knowledge Context 是否真正注入
+        knowledge_id: 注入的 Knowledge id（context 模式）
+        """
         try:
             RUNS_FILE.parent.mkdir(parents=True, exist_ok=True)
             row = {
@@ -49,6 +57,9 @@ class Evaluator:
                 "token_usage": token_usage or {},
                 "prompt_length": prompt_length,
                 "response_length": response_length,
+                "mode": mode,
+                "context_applied": context_applied,
+                "knowledge_id": knowledge_id,
             }
             with open(RUNS_FILE, "a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")

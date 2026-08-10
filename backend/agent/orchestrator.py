@@ -79,6 +79,7 @@ class AgentOrchestrator:
         latency_ms = int((time.time() - started) * 1000)
 
         # 5. 评估记录（含 model/token usage/prompt length/response length）
+        context_applied = len(context_assets) > 0
         self.evaluator.record(
             query=query,
             sources=sources,
@@ -88,6 +89,9 @@ class AgentOrchestrator:
             token_usage=llm_info.get("token_usage", {}),
             prompt_length=llm_info.get("prompt_chars", 0),
             response_length=len(answer),
+            mode="context" if context else "plain",
+            context_applied=context_applied,
+            knowledge_id=(context or {}).get("knowledge_id", "") if context else "",
         )
 
         return {
@@ -100,7 +104,7 @@ class AgentOrchestrator:
                 "llm_provider": llm_info.get("provider", "mock"),
                 "token_usage": llm_info.get("token_usage", {}),
                 # Context 注入追踪（eval 用）
-                "context_applied": len(context_assets) > 0,
+                "context_applied": context_applied,
                 "context_knowledge_id": context.get("knowledge_id") if context else None,
             },
         }

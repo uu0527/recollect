@@ -1,0 +1,50 @@
+{
+  "description": "Context-aware Agent Eval Cases — 验证 Knowledge Context Injection 是否提升 Agent 质量",
+  "version": "0.1.0",
+  "cases": [
+    {
+      "id": "ctx_001",
+      "mode": "context",
+      "knowledge_id": "69058a8e000000000501005a",
+      "question": "总结这个知识",
+      "expected_topics": ["话梅", "蜜饯", "台南", "华记"],
+      "note": "Case 1: Knowledge Summary Grounding — 回答应基于 knowledge 内容"
+    },
+    {
+      "id": "ctx_002",
+      "mode": "context",
+      "knowledge_id": "67fdfd14000000001c0064ed",
+      "question": "这个知识有哪些关键点？",
+      "expected_topics": ["台北", "葱抓饼", "童年", "永康街"],
+      "note": "Case 2: Source Grounding — 回答应引用 key_points"
+    },
+    {
+      "id": "ctx_003",
+      "mode": "context_multiturn",
+      "knowledge_id": "6904907700000000030185f5",
+      "session_id": "eval_multiturn_ctx_001",
+      "turns": [
+        { "question": "饶河夜市有什么必吃？" },
+        { "question": "这些里面最推荐哪个？" }
+      ],
+      "expected_topics": ["饶河夜市", "必吃"],
+      "note": "Case 3: Multi-turn Context — 同 session 两轮提问，context 持续生效"
+    },
+    {
+      "id": "ctx_004",
+      "mode": "context_irrelevant",
+      "knowledge_id": "69058a8e000000000501005a",
+      "question": "如何优化 React 组件性能？",
+      "expected_topics": [],
+      "note": "Case 4: 无关问题 — Agent 应避免强行使用 Context"
+    },
+    {
+      "id": "ctx_005",
+      "mode": "context_bad_id",
+      "knowledge_id": "not_exist_knowledge_xxx",
+      "question": "介绍一下这个内容",
+      "expected_topics": [],
+      "note": "Case 5: 错误 knowledge_id — fallback 普通 Chat"
+    }
+  ]
+}
