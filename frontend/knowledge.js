@@ -28,6 +28,7 @@
   // ============================================================
   let knowledgeItems = []; // 全量 Knowledge
   let knowledgeLoaded = false;
+  let currentKnowledge = null; // 当前打开的 Knowledge Detail
 
   async function fetchKnowledge() {
     // ---- API 接入点（backend 就绪后启用）----
@@ -200,6 +201,7 @@
   window.openKnowledgeDetail = function (knowledgeId) {
     const kn = knowledgeItems.find((x) => x.knowledge_id === knowledgeId);
     if (!kn) return;
+    currentKnowledge = kn; // 记录当前查看的知识（Ask Agent 使用）
     document.getElementById("knDetailTitle").textContent = kn.title || "—";
     document.getElementById("knDetailSummary").textContent = kn.summary || "（暂无摘要）";
     const concepts = document.getElementById("knDetailConcepts");
@@ -247,9 +249,30 @@
     if (shell) shell.switchView("library-knowledge");
   };
 
-  // Ask Agent 占位（后续阶段接入 Agent context）
+  // Ask Agent: 保存当前 Knowledge Context 并跳转 AI Assistant
   window.askKnowledgeAgent = function () {
-    alert("Ask Agent 将在后续阶段接入（Agent context 注入）");
+    // 当前打开的 Knowledge（openKnowledgeDetail 时记录）
+    const kn = currentKnowledge;
+    if (!kn) return;
+    // 全局 context state（Knowledge ↔ Assistant 共享）
+    window.RECOLLECT_CONTEXT = {
+      knowledge_id: kn.knowledge_id,
+      title: kn.title || "",
+      summary: kn.summary || "",
+      tags: kn.tags || [],
+      source_saved_ids: kn.source_saved_ids || [],
+    };
+    const shell = window.RECOLLECT_SHELL;
+    if (shell) shell.switchView("assistant");
+    // 让 Assistant 刷新 Context Panel
+    if (window.RECOLLECT_ASSISTANT && typeof window.RECOLLECT_ASSISTANT.renderContext === "function") {
+      window.RECOLLECT_ASSISTANT.renderContext();
+    }
+    const input = document.getElementById("assistantInput");
+    if (input) {
+      input.placeholder = "基于「" + (kn.title || "").slice(0, 24) + "」提问…";
+      input.focus();
+    }
   };
 
   // ============================================================

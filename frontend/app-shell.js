@@ -105,6 +105,11 @@
   async function callAgent(query, sessionId) {
     const body = { query: query };
     if (sessionId) body.session_id = sessionId;
+    // Knowledge Context: 存在则携带（backend 暂不解析 context 字段，仅前端传递）
+    const ctx = window.RECOLLECT_CONTEXT;
+    if (ctx && ctx.knowledge_id) {
+      body.context = { knowledge_id: ctx.knowledge_id };
+    }
     const resp = await fetch(API_BASE + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -129,6 +134,51 @@
     if (md.source_count != null) parts.push(md.source_count + " sources");
     return parts.join(" · ");
   }
+
+  // ============================================================
+  // Knowledge Context Panel
+  // ============================================================
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function renderContext() {
+    const panel = document.getElementById("assistantContextPanel");
+    const input = document.getElementById("assistantInput");
+    const ctx = window.RECOLLECT_CONTEXT;
+    if (!panel) return;
+    if (!ctx || !ctx.knowledge_id) {
+      panel.style.display = "none";
+      panel.innerHTML = "";
+      if (input) input.placeholder = "输入问题，如：猫寿命延长研究？";
+      return;
+    }
+    const tags = (ctx.tags || []).map(function (t) {
+      return '<span class="ctx-tag">' + escapeHtml(t) + "</span>";
+    }).join("");
+    const srcCount = (ctx.source_saved_ids || []).length;
+    panel.style.display = "block";
+    panel.innerHTML =
+      '<div class="ctx-head">' +
+      '<div class="ctx-title"><span class="ctx-badge">Context</span>' + escapeHtml(ctx.title || "") + "</div>" +
+      '<button class="ctx-clear" onclick="clearAssistantContext()">Clear Context</button>' +
+      "</div>" +
+      (ctx.summary ? '<div class="ctx-summary">' + escapeHtml(ctx.summary) + "</div>" : "") +
+      '<div class="ctx-meta">' +
+      "<span>Sources: " + srcCount + " saved item" + (srcCount === 1 ? "" : "s") + "</span>" +
+      '<span class="ctx-tags">' + tags + "</span>" +
+      "</div>";
+    if (input) input.placeholder = "基于「" + (ctx.title || "").slice(0, 24) + "」提问…";
+  }
+
+  window.clearAssistantContext = function () {
+    window.RECOLLECT_CONTEXT = null;
+    renderContext();
+  };
+
+  window.RECOLLECT_ASSISTANT = { renderContext: renderContext };
 
   // ============================================================
   // AI Assistant 页面
@@ -171,6 +221,7 @@
   // 点击 FAB → 打开 AI Assistant 对话窗口（跳转页面并聚焦输入）
   window.openAssistant = function () {
     switchView("assistant");
+    renderContext();
     const input = document.getElementById("assistantInput");
     if (input) {
       input.focus();
