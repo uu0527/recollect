@@ -201,54 +201,20 @@ function renderCards() {
   });
 }
 
-// ===== 视图切换 =====
-function switchView(view) {
-  el("view-library").style.display = view === "library" ? "block" : "none";
-  el("view-import").style.display = view === "import" ? "block" : "none";
-  document.querySelectorAll(".nav a").forEach(a => {
-    a.classList.toggle("active", a.dataset.view === view);
-  });
+// ===== Library 渲染（由 app-shell 的 Knowledge 视图触发）=====
+function renderLibrary() {
+  renderStats();
+  renderFilters();
+  renderCards();
 }
-document.querySelectorAll(".nav a").forEach(a => {
-  a.addEventListener("click", e => { e.preventDefault(); switchView(a.dataset.view); });
-});
 
-// ===== 导入（L2 demo：模拟处理）=====
-el("importBtn").addEventListener("click", async () => {
-  const link = el("linkInput").value.trim();
-  const result = el("importResult");
-  if (!link) { result.textContent = "请先粘贴小红书链接"; result.classList.add("show"); return; }
-
-  const btn = el("importBtn");
-  btn.disabled = true;
-  btn.textContent = "整理中…";
-  result.classList.remove("show");
-
-  // V1 静态 demo：模拟 P2/P3 处理耗时；生产版调用后端 API
-  await new Promise(r => setTimeout(r, 1500));
-
-  const mockNote = {
-    title: "来自链接的笔记（演示）",
-    category_l1: "知识管理",
-    category_l2: "待归纳",
-    tags: ["导入中", "demo"],
-    tldr: "这是导入功能的演示结果。生产环境将调用后端 P2/P3 完成真实筛选与归纳。",
-    key_points: ["链接已接收", "等待后端处理", "V1 静态 demo"],
-    actionable: "接入后端后，此处将展示真实的筛选决策与知识卡片。"
-  };
-  result.innerHTML = `
-    <div style="border:1px solid var(--border);border-radius:10px;padding:16px 20px;">
-      <div style="font-weight:600;margin-bottom:8px;">${mockNote.title}</div>
-      <div style="margin-bottom:8px;"><span class="pill cat">${mockNote.category_l1}</span></div>
-      <div style="color:var(--text-2);font-size:13.5px;">${mockNote.tldr}</div>
-      <div style="margin-top:10px;font-size:12.5px;color:var(--text-3);">已接收：${link}</div>
-    </div>`;
-  result.classList.add("show");
-  btn.disabled = false;
-  btn.textContent = "开始整理";
-});
-
-// ===== init =====
-renderStats();
-renderFilters();
-renderCards();
+// ===== 初始化：Shell 已接管页面切换，仅当 Knowledge 视图激活时渲染 =====
+if (window.RECOLLECT_SHELL) {
+  window.RECOLLECT_SHELL.switchView("library-knowledge");
+  renderLibrary();
+} else {
+  // 旧版独立页面兜底
+  renderStats();
+  renderFilters();
+  renderCards();
+}
