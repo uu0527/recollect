@@ -152,6 +152,27 @@
   .chatbot-input button:hover { background: var(--accent-hover); }
 
   /* Library (legacy app.js 复用) */
+  .lib-tabs { display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
+  .lib-tab { padding: 8px 16px; font-size: var(--fs-subtitle); font-weight: 500; color: var(--text-2); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: var(--font); letter-spacing: -0.005em; margin-bottom: -1px; transition: color .15s, border-color .15s; }
+  .lib-tab:hover { color: var(--text); }
+  .lib-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .saved-list { display: flex; flex-direction: column; gap: 10px; }
+  .saved-card { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); transition: border-color .15s; }
+  .saved-card:hover { border-color: var(--border-2); }
+  .saved-main { flex: 1; min-width: 0; }
+  .saved-main h3 { font-size: var(--fs-body); font-weight: 550; letter-spacing: -0.01em; line-height: var(--lh-tight); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .saved-meta { display: flex; gap: 14px; font-size: var(--fs-caption); color: var(--text-3); }
+  .saved-meta span { display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved-status { flex-shrink: 0; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: var(--fs-caption); font-weight: 500; }
+  .status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; }
+  .status-captured { background: var(--bg-soft); border: 1px solid var(--border); color: var(--text-2); }
+  .status-captured::before { background: var(--text-3); }
+  .status-processing { background: #F3F5F4; border: 1px solid var(--border); color: var(--text-2); }
+  .status-processing::before { background: var(--accent-blue); animation: pulse 1.6s ease-in-out infinite; }
+  .status-ready { background: #EFF2F1; border: 1px solid var(--border); color: var(--text); }
+  .status-ready::before { background: var(--text); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
   .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
   .chip { padding: 6px 14px; border: 1px solid var(--border-2); border-radius: 20px; font-size: var(--fs-caption); font-weight: 450; letter-spacing: -0.005em; cursor: pointer; background: var(--bg); color: var(--text-2); transition: all .15s; }
   .chip:hover { border-color: var(--accent); color: var(--text); }
@@ -215,17 +236,27 @@
       </div>
     </section>
 
-    <!-- Library: Saved（占位，本次不实现数据逻辑） -->
+    <!-- Library: Saved -->
     <section id="view-library-saved" class="view">
-      <h1>Saved</h1>
-      <p class="subtitle">收藏的原始笔记（即将接入）</p>
-      <div class="placeholder">Saved 数据展示将在 Library 阶段实现。</div>
+      <h1>Library</h1>
+      <p class="subtitle">收藏内容与知识处理状态</p>
+      <div class="lib-tabs" id="libTabs">
+        <button class="lib-tab active" data-tab="saved" onclick="switchLibTab('saved')">Saved</button>
+        <button class="lib-tab" data-tab="knowledge" onclick="switchLibTab('knowledge')">Knowledge</button>
+      </div>
+      <div id="savedList" class="saved-list">
+        <div class="empty">加载中…</div>
+      </div>
     </section>
 
     <!-- Library: Knowledge（复用现有渲染） -->
     <section id="view-library-knowledge" class="view">
-      <h1>Knowledge</h1>
+      <h1>Library</h1>
       <p class="subtitle">AI 生成的知识卡片</p>
+      <div class="lib-tabs" id="libTabsK">
+        <button class="lib-tab" data-tab="saved" onclick="switchLibTab('saved')">Saved</button>
+        <button class="lib-tab active" data-tab="knowledge" onclick="switchLibTab('knowledge')">Knowledge</button>
+      </div>
       <div class="stat-row">
         <div class="stat"><b id="stat-total">0</b><span>条收藏</span></div>
         <div class="stat"><b id="stat-cats">0</b><span>个分类</span></div>
@@ -279,6 +310,7 @@
 </div>
 
 <script src="app-shell.js"></script>
+<script src="saved.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,38 @@
+{
+ "items": [
+  {
+   "note_id": "mvp_verify_001",
+   "title": "MVP 真实链路验证事件",
+   "source": "https://www.xiaohongshu.com/explore/mvp_verify_001",
+   "collected_at": "2026-08-08 13:00:00",
+   "author": "验证用户",
+   "status": "Processing"
+  },
+  {
+   "note_id": "6954c9ad0000000022022115",
+   "title": "台湾 梅山乡地道家乡早餐 很爱他家无籽冰梅",
+   "source": "https://www.xiaohongshu.com/explore/6954c9ad0000000022022115?xsec_token=ABmEOUkXJ-ASXXf1-xYWUTdsYTbfizXV2jaNxMcJxVUsY=&xsec_source=pc_user&source=web_user_page",
+   "collected_at": "2026-08-08 06:32:54",
+   "author": "海南雞飯多加飯",
+   "status": "Processing"
+  },
+  {
+   "note_id": "6a6d5ba10000000008009c00",
+   "title": "zyy 签售态度",
+   "source": "https://www.xiaohongshu.com/explore/6a6d5ba10000000008009c00?xsec_token=ABMO7cCKdnrH0vxi0Balmf-ubXPrc_9EcXMF6JeZQcr8U=&xsec_source=pc_feed",
+   "collected_at": "2026-08-08 07:34:05",
+   "author": "小宝的存钱罐",
+   "status": "Processing"
+  },
+  {
+   "note_id": "6a76a50f000000000502aa7b",
+   "title": "原来《梦幻西游》沉默账号还有被内部员工盗的",
+   "source": "https://www.xiaohongshu.com/explore/6a76a50f000000000502aa7b?xsec_token=ABVKdt5hz3EZYVE8DpkvkRGcGKhQnGICYIBvoIGH2OyfU=&xsec_source=pc_feed",
+   "collected_at": "2026-08-08 07:47:56",
+   "author": "不吃香菜",
+   "status": "Processing"
+  }
+ ],
+ "generated_at": "2026-08-10",
+ "source": "data/events/storage_events.jsonl"
+}

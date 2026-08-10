@@ -41,6 +41,10 @@
     if (view === "library-knowledge" && typeof window.renderLibrary === "function") {
       window.renderLibrary();
     }
+    // Saved 视图加载时触发渲染（saved.js 提供 loadSaved）
+    if (view === "library-saved" && window.RECOLLECT_SAVED && typeof window.RECOLLECT_SAVED.loadSaved === "function") {
+      window.RECOLLECT_SAVED.loadSaved();
+    }
     window.scrollTo(0, 0);
   }
 
