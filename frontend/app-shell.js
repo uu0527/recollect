@@ -67,7 +67,7 @@
       sources.slice(0, 4).forEach((s) => {
         const chip = document.createElement("a");
         chip.className = "src-chip";
-        chip.textContent = "📄 " + (s.title || s.note_id || "").slice(0, 18);
+        chip.textContent = (s.title || s.note_id || "").slice(0, 18);
         if (s.url) chip.href = s.url;
         chip.target = "_blank";
         src.appendChild(chip);
@@ -96,11 +96,13 @@
     return t;
   }
 
-  async function callAgent(query) {
+  async function callAgent(query, sessionId) {
+    const body = { query: query };
+    if (sessionId) body.session_id = sessionId;
     const resp = await fetch(API_BASE + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: query }),
+      body: JSON.stringify(body),
     });
     if (!resp.ok) {
       throw new Error("API " + resp.status);
@@ -108,9 +110,24 @@
     return await resp.json();
   }
 
+  // metadata 摘要: model · token usage · latency · sources
+  function metaSummary(md) {
+    if (!md) return "";
+    const parts = [];
+    if (md.model) parts.push(md.model);
+    if (md.llm_provider && md.llm_provider !== md.model) parts.push(md.llm_provider);
+    if (md.token_usage && md.token_usage.total_tokens != null) {
+      parts.push(md.token_usage.total_tokens + " tokens");
+    }
+    if (md.latency_ms != null) parts.push(Math.round(md.latency_ms) + "ms");
+    if (md.source_count != null) parts.push(md.source_count + " sources");
+    return parts.join(" · ");
+  }
+
   // ============================================================
   // AI Assistant 页面
   // ============================================================
+  let assistantSessionId = "web-" + Date.now().toString(36);
   window.sendAssistant = async function () {
     const input = document.getElementById("assistantInput");
     const btn = document.getElementById("assistantBtn");
@@ -124,14 +141,9 @@
 
     const typing = addTyping(msgBox);
     try {
-      const data = await callAgent(q);
+      const data = await callAgent(q, assistantSessionId);
       typing.remove();
-      const meta =
-        (data.metadata ? data.metadata.llm_provider : "?") +
-        " · " +
-        (data.metadata ? data.metadata.source_count : 0) +
-        " sources · " +
-        (data.metadata ? Math.round(data.metadata.latency_ms) + "ms" : "");
+      const meta = metaSummary(data.metadata);
       appendMessage(msgBox, "assistant", data.answer || "（空回答）", data.sources || [], meta);
     } catch (err) {
       typing.remove();
@@ -167,9 +179,9 @@
 
     const typing = addTyping(body);
     try {
-      const data = await callAgent(q);
+      const data = await callAgent(q, assistantSessionId);
       typing.remove();
-      appendMessage(body, "assistant", data.answer || "（空回答）", data.sources || [], null);
+      appendMessage(body, "assistant", data.answer || "（空回答）", data.sources || [], metaSummary(data.metadata));
     } catch (err) {
       typing.remove();
       appendMessage(body, "assistant", "⚠️ " + err.message, [], null);
