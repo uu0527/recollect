@@ -46,6 +46,7 @@ class AgentOrchestrator:
         self.context_router = ContextRouter()
         self._last_router_decision = None
         self._last_context_request = False
+        self._last_context_error = None  # 记录 context 解析失败原因（供日志）
         # Conversation Log（Alpha MVP）
         from backend.agent.conversation_log import ConversationLogger
         self.conversation_logger = ConversationLogger()
@@ -66,6 +67,7 @@ class AgentOrchestrator:
 
         # 0. Knowledge Context Resolver + Router 决策（Phase 3.4b: selective injection）
         self._last_context_request = bool(context and context.get("knowledge_id"))
+        self._last_context_error = None
         context_assets = self._resolve_context(context, query)
 
         # 1. 检索 knowledge
@@ -169,7 +171,9 @@ class AgentOrchestrator:
             # knowledge 表以 note_id 为主键；knowledge_id 直接映射 note_id
             card = adapter.get_knowledge_by_note_id(knowledge_id)
             if not card:
-                print(f"[context] WARNING: knowledge_id={knowledge_id} 不存在，忽略 context")
+                # 增强日志: 记录解析失败（供未来 Analysis / Debug）
+                self._last_context_error = f"knowledge_id={knowledge_id} 未解析（Supabase knowledge 表无此 note_id）"
+                print(f"[context] WARNING: {self._last_context_error}，忽略 context")
                 return []
 
             # Context Router 决策（Phase 3.4b: selective injection）
@@ -183,7 +187,8 @@ class AgentOrchestrator:
                 return []
             return [card]
         except Exception as exc:
-            print(f"[context] WARNING: Knowledge Context 解析失败: {exc}")
+            self._last_context_error = f"knowledge_id={knowledge_id} 解析异常: {type(exc).__name__}: {exc}"
+            print(f"[context] WARNING: {self._last_context_error}")
             return []  # 查询失败不阻断用户请求
 
     # ------------------------------------------------------------
@@ -210,6 +215,7 @@ class AgentOrchestrator:
                 "retrieved_context": bool(self._last_context_request),
                 "router_decision": decision.should_inject if decision else None,
                 "router_score": decision.score if decision else None,
+                "context_error": self._last_context_error,  # 解析失败原因（可为 null）
                 "tokens": llm_info.get("token_usage", {}).get("total_tokens", 0),
                 "latency_ms": latency_ms,
                 "model": llm_info.get("model", ""),

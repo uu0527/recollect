@@ -51,6 +51,7 @@ class ConversationLogger:
                 "retrieved_context": bool(entry.get("retrieved_context")),
                 "router_decision": entry.get("router_decision"),
                 "router_score": entry.get("router_score"),
+                "context_error": entry.get("context_error"),  # context 解析失败原因（可为 null）
                 "sources": [s.get("note_id", "") for s in entry.get("sources", [])],
                 "source_titles": [s.get("title", "") for s in entry.get("sources", [])][:5],
                 "tokens": entry.get("tokens", 0),

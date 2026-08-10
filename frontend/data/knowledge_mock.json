@@ -1,56 +1,252 @@
 {
-  "items": [
-    {
-      "knowledge_id": "kn_001",
-      "title": "AI Agent Evaluation",
-      "summary": "AI Agent evaluation focuses on continuous feedback loops: defining task-level metrics, measuring tool-call accuracy, tracking cost/latency, and iterating through eval harnesses. Good agents are evaluated on reliability and decision quality, not just final output.",
-      "tags": ["AI", "Agent", "Evaluation"],
-      "topic": "AI",
-      "concepts": ["Feedback Loop", "Eval Harness", "Reliability"],
-      "source_saved_ids": ["6a6d5ba10000000008009c00", "6954c9ad0000000022022115", "6a76a50f000000000502aa7b"],
-      "created_at": "2026-08-09 10:00:00"
-    },
-    {
-      "knowledge_id": "kn_002",
-      "title": "Pet Longevity Research - AIM Protein",
-      "summary": "A Tokyo university team developed a cat-specific AIM protein injection that may extend average cat lifespan from 15 to 30 years, targeting a 2027 market launch. The mechanism centers on AIM protein's role in immune regulation and organ protection.",
-      "tags": ["AI", "Health", "Science"],
-      "topic": "AI",
-      "concepts": ["AIM Protein", "Longevity", "2027 Launch"],
-      "source_saved_ids": ["6955a1b20000000002009d01"],
-      "created_at": "2026-08-09 09:30:00"
-    },
-    {
-      "knowledge_id": "kn_003",
-      "title": "Modern Deployment Workflow",
-      "summary": "Vercel supports Git-integrated automatic deployments with preview environments separated from production. Environment variables and framework presets simplify the release pipeline for frontend teams.",
-      "tags": ["Product", "Deployment"],
-      "topic": "Product",
-      "concepts": ["Preview Deploy", "Git Integration", "CI/CD"],
-      "source_saved_ids": ["web_note_001"],
-      "created_at": "2026-08-08 15:30:00"
-    },
-    {
-      "knowledge_id": "kn_004",
-      "title": "Content Quality Signals in Social Platforms",
-      "summary": "High-virality social content often combines personal storytelling with visual consistency and hashtag strategy. Understanding audience sentiment from comment engagement helps refine content direction.",
-      "tags": ["Product", "Social"],
-      "topic": "Product",
-      "concepts": ["Engagement", "Hashtag Strategy", "Visual Consistency"],
-      "source_saved_ids": ["6954c9ad0000000022022115"],
-      "created_at": "2026-08-08 07:00:00"
-    },
-    {
-      "knowledge_id": "kn_005",
-      "title": "Digital Asset Security Risks",
-      "summary": "Online account security extends beyond passwords: insider threats, dormant-account hijacking, and recovery-process gaps can expose user assets. Strong audit trails and anomaly detection are critical for trust.",
-      "tags": ["Design", "Security"],
-      "topic": "Design",
-      "concepts": ["Insider Threat", "Anomaly Detection", "Trust"],
-      "source_saved_ids": ["6a76a50f000000000502aa7b"],
-      "created_at": "2026-08-08 08:00:00"
-    }
-  ],
-  "generated_at": "2026-08-10",
-  "note": "mock knowledge assets derived from frontend/data/saved_mock.json via source_saved_ids"
+ "generated_at": "realtime",
+ "note": "knowledge assets from Supabase knowledge 表（knowledge_id = 真实 note_id，与后端一致）",
+ "items": [
+  {
+   "knowledge_id": "69058a8e000000000501005a",
+   "note_id": "69058a8e000000000501005a",
+   "title": "陈数推荐的话梅台南实地店里购买",
+   "summary": "陈数推荐的华记蜜饯台南实体店购买攻略：位于永康区大桥火车站旁，50台币/包（约11-12元），买十送一，比淘宝便宜；主打甘宋梅、红甘宋梅、双喜梅等，可试吃，支持…",
+   "tags": [
+    "台南美食",
+    "华记蜜饯",
+    "话梅推荐",
+    "台湾伴手礼",
+    "陈数同款",
+    "实地购物指南"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "店铺地址：台南市永康区大桥火车站步行约1公里，交通方式为高雄→台南站→区间车1站至大桥站",
+    "价格与优惠：小包装50台币/包（≈11-12元人民币），买十送一；淘宝同款约25元/包，本地购买性价比高",
+    "核心产品区分：甘宋梅（基础款）、红甘宋梅（更酸）、双喜梅（两者混合）；另有甘甜梅、冰梅、李子、杏子、相思果等多款蜜饯",
+    "服务细节：店员热情可试吃，部分包装标注‘寄大陆’；可通过包装上Line ID @zoowu 提前确认库存"
+   ],
+   "source_saved_ids": [
+    "69058a8e000000000501005a"
+   ],
+   "created_at": "2026-08-08T13:49:59"
+  },
+  {
+   "knowledge_id": "67fdfd14000000001c0064ed",
+   "note_id": "67fdfd14000000001c0064ed",
+   "title": "台北一人食｜在名店追忆童年",
+   "summary": "作者在台北永康街品尝‘天津葱抓饼’名店的总汇版手抓饼（60台币），回忆童年与母亲共食的温馨场景，并在永康公园树荫下享受一人食的静谧时光。",
+   "tags": [
+    "台北美食",
+    "一人食",
+    "永康街",
+    "手抓饼",
+    "怀旧饮食",
+    "街头小吃"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "永康街‘天津葱抓饼’为当地知名小店，曾获九十一度金牌招牌奖，价格实惠（基础款30台币起，总汇版60台币）",
+    "作者指出该小吃实为台湾手抓饼，非天津原产；提及周杰伦代言及童年家庭记忆，强化情感联结",
+    "食物口感层次丰富：外皮软糯酥脆兼具，内馅含滑嫩鸡蛋、九层塔与芝士，香气突出",
+    "推荐搭配场景：捷运东门站步行可达，食后可至邻近永康公园长椅休憩，适合夏日午后一人慢食"
+   ],
+   "source_saved_ids": [
+    "67fdfd14000000001c0064ed"
+   ],
+   "created_at": "2026-08-08T13:50:00"
+  },
+  {
+   "knowledge_id": "6904907700000000030185f5",
+   "note_id": "6904907700000000030185f5",
+   "title": "台北｜精選饒河夜市必吃 照著吃就對了！",
+   "summary": "台北饶河夜市必吃精选指南，照单全收不踩雷。",
+   "tags": [
+    "台北",
+    "饶河夜市",
+    "美食",
+    "夜市攻略",
+    "必吃"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "饶河夜市是台北知名夜市，美食选择丰富。",
+    "笔记标题强调“必吃”和“照着吃”，提供精选推荐。",
+    "内容缺失，无法提取具体美食或店铺信息。",
+    "适合首次到访或想高效品尝美食的游客。"
+   ],
+   "source_saved_ids": [
+    "6904907700000000030185f5"
+   ],
+   "created_at": "2026-08-08T13:50:00"
+  },
+  {
+   "knowledge_id": "6a758196000000003301ab73",
+   "note_id": "6a758196000000003301ab73",
+   "title": "求助贴 32岁从法国回流何去何从",
+   "summary": "32岁法国回流女性因生育与求职双重困境求助：无国内工作经验、面试屡因带娃被拒，面临职业断层与家庭责任冲突。",
+   "tags": [
+    "海归妈妈",
+    "跨境求职",
+    "带娃面试",
+    "职业断层",
+    "法国回流"
+   ],
+   "topic": "职场发展",
+   "concepts": [
+    "有4年法国国际采购全职经验，但回国后投递外贸/亚马逊运营岗均因‘无经验’被拒",
+    "2026年2月生子后开始求职，面试官普遍质疑‘孩子太小能否带过来’，即便有老人协助仍全军覆没",
+    "配偶博士毕业入职央企月薪1.3w+公积金4.5k，家庭储蓄目标3年60w，但其本人职业路径归零",
+    "签证2029年到期，尚可返法；但因母亲摔伤需回国照顾、孩子难带等现实，已无法再赴法工作"
+   ],
+   "source_saved_ids": [
+    "6a758196000000003301ab73"
+   ],
+   "created_at": "2026-08-08T13:50:01"
+  },
+  {
+   "knowledge_id": "6a6e1afd0000000005020db7",
+   "note_id": "6a6e1afd0000000005020db7",
+   "title": "聪明人不要随便进大厂",
+   "summary": "聪明人应理性评估大厂门槛与压力，双非背景可尝试销售类岗位作跳板；更推荐关注B/C轮AI潜力公司，结合VC动向与业务模式判断长期价值。",
+   "tags": [
+    "大厂避坑",
+    "AI公司求职",
+    "双非就业",
+    "职业跳板",
+    "VC投资逻辑"
+   ],
+   "topic": "职业求职",
+   "concepts": [
+    "大厂多数岗位学历门槛高（985/211/QS前100），但招商、采销、KA、广告销售等岗位更重业绩，对双非较友好",
+    "上述岗位高压KPI、单休、末位淘汰普遍，适合1-2年积累经验后跳槽，长期难承受",
+    "B轮至C轮、团队规模50-200人的AI公司（如早期智谱、MiniMax）可能提供更高期权回报与成长空间",
+    "筛选潜力公司可关注头部VC（高瓴、红杉）近期投资标的，结合IT桔子按轮次/赛道交叉验证",
+    "判断公司价值需看盈利路径是否清晰、团队风格是否契合，而非仅看规模或融资轮次"
+   ],
+   "source_saved_ids": [
+    "6a6e1afd0000000005020db7"
+   ],
+   "created_at": "2026-08-08T13:50:02"
+  },
+  {
+   "knowledge_id": "6a75db92000000002202feba",
+   "note_id": "6a75db92000000002202feba",
+   "title": "日本科学家成功研发！猫寿命或延长至30年！",
+   "summary": "日本东京大学团队研发猫专用AIM蛋白注射剂，通过补充猫咪天生缺陷的肾脏清洁蛋白，有望将猫平均寿命从15年延长至30年；2027年目标上市，已启动全国临床试验。",
+   "tags": [
+    "猫咪健康",
+    "慢性肾病",
+    "AIM蛋白",
+    "宠物医疗",
+    "东京大学",
+    "延长寿命"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "绝大多数猫咪死因是慢性肾病，主因是其体内AIM蛋白功能缺失，无法清除肾脏代谢废物",
+    "宫崎彻教授团队开发猫专用AIM蛋白注射剂，人工补足该蛋白功能，恢复肾脏清理能力",
+    "项目曾因疫情经费中断，靠全球猫主人自发捐款3亿日元（约1500万人民币）续命，体现强烈人宠情感联结",
+    "2024年6月已在日本26家动物医院启动大规模临床试验，目标2027年春季正式上市",
+    "商业化将通过新设公司推进，强调合理定价以保障普通家庭可及性"
+   ],
+   "source_saved_ids": [
+    "6a75db92000000002202feba"
+   ],
+   "created_at": "2026-08-08T13:50:02"
+  },
+  {
+   "knowledge_id": "6a4f80be00000000170295ba",
+   "note_id": "6a4f80be00000000170295ba",
+   "title": "想你想了十四年。",
+   "summary": "作者为喝一口念了14年的郑老牌木瓜牛奶，专程台北-高雄5小时极限往返，感动老板并获致谢。",
+   "tags": [
+    "台湾美食",
+    "高雄夜市",
+    "郑老牌木瓜牛奶",
+    "怀旧小吃",
+    "情感旅行"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "郑老牌木瓜牛奶位于高雄六合夜市，自1965年经营至今，是当地知名老字号摊位。",
+    "该摊位招牌为木瓜牛奶，售价70新台币/杯，另有多种水果饮品可选。",
+    "作者因情感执念专程往返5小时只为一杯木瓜牛奶，体现食物承载的深层记忆与情感联结。",
+    "摊位地址：高雄六合夜市（六合二路与民主横路口），营业时间约晚5:00起。"
+   ],
+   "source_saved_ids": [
+    "6a4f80be00000000170295ba"
+   ],
+   "created_at": "2026-08-08T13:49:59"
+  },
+  {
+   "knowledge_id": "68da9afb0000000013011d33",
+   "note_id": "68da9afb0000000013011d33",
+   "title": "如何从高雄机场去台南🚄台铁往返半小时",
+   "summary": "从高雄机场搭捷运至高雄车站，转台铁自强号约30分钟到台南；现场购票可得实体票，注意新车厢可能无固定座位。",
+   "tags": [
+    "台铁",
+    "高雄机场",
+    "台南旅行",
+    "交通攻略",
+    "自强号",
+    "捷运换乘"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "交通路径：高雄机场→捷运红线至高雄车站→步行至台铁售票处→搭乘自强号（约30分钟）至台南站",
+    "购票与进站：现场买纸质票含二维码，进出站需刷票面二维码；也可用悠游卡直接刷卡进站",
+    "座位差异：新型自强号可能无固定座位（自由入座），传统普通车有对号入座；车票标注座位号但未必适用所有车型",
+    "返程提示：台南回高雄可选普通车（慢、多停靠、有固定座位），出站后计程车排队便利"
+   ],
+   "source_saved_ids": [
+    "68da9afb0000000013011d33"
+   ],
+   "created_at": "2026-08-08T13:50:00"
+  },
+  {
+   "knowledge_id": "6a7618ea0000000021020248",
+   "note_id": "6a7618ea0000000021020248",
+   "title": "哈圈刚刚！祝安好❤️李毅杰透露杨和苏伤情",
+   "summary": "说唱歌手杨和苏因脚趾严重受伤坐轮椅出行，李毅杰透露其大拇指已截除一半，脚部接受手术处理。",
+   "tags": [
+    "杨和苏",
+    "中文说唱",
+    "受伤",
+    "活死人",
+    "李毅杰"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "杨和苏脚趾头被切掉一半，大拇指已截除约50%，属严重外伤",
+    "现场照片显示其坐轮椅、脚部佩戴灰色固定支具并包扎处理",
+    "李毅杰在视频中亲口证实伤情，称‘那个脚切了一半’",
+    "事件引发哈圈关注，但未说明事故原因及后续康复计划"
+   ],
+   "source_saved_ids": [
+    "6a7618ea0000000021020248"
+   ],
+   "created_at": "2026-08-08T13:50:01"
+  },
+  {
+   "knowledge_id": "6a7692b10000000033011882",
+   "note_id": "6a7692b10000000033011882",
+   "title": "我的夏日穿搭记录",
+   "summary": "博主在地铁中展示12套夏日穿搭，融合Blokecore、90s复古与Y2K元素，强调宽松剪裁、叠穿与配饰搭配。",
+   "tags": [
+    "夏日穿搭",
+    "90s复古",
+    "Blokecore",
+    "地铁拍照",
+    "Ootd"
+   ],
+   "topic": "生活方式",
+   "concepts": [
+    "主打宽松版型：阔腿牛仔裤、工装裤、短裙+长袜组合高频出现，突出舒适与随性风格。",
+    "核心单品复用：白色长袜、棕色厚底鞋、迷彩包、棒球帽/针织帽反复搭配不同上衣，提升造型统一性。",
+    "风格混搭明显：如'I ❤ NY'拼接袖T恤+牛仔裤（美式休闲）、碎花吊带裙+黑开衫（甜酷）、条纹长袖+浅色牛仔（Y2K）等。",
+    "细节亮点：双麻花辫、高马尾、蕾丝边吊带、卡通印花T恤等强化个人辨识度与年代感。"
+   ],
+   "source_saved_ids": [
+    "6a7692b10000000033011882"
+   ],
+   "created_at": "2026-08-08T13:50:02"
+  }
+ ]
 }

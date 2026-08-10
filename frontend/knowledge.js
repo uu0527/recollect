@@ -254,9 +254,13 @@
     // 当前打开的 Knowledge（openKnowledgeDetail 时记录）
     const kn = currentKnowledge;
     if (!kn) return;
+    // 关键: 传真实 note_id（后端 Supabase knowledge 表按 note_id 标识）
+    // 兼容旧 mock（只有 knowledge_id）与新数据（有 note_id）
+    const realId = kn.note_id || kn.knowledge_id;
     // 全局 context state（Knowledge ↔ Assistant 共享）
     window.RECOLLECT_CONTEXT = {
-      knowledge_id: kn.knowledge_id,
+      knowledge_id: realId,
+      note_id: realId,
       title: kn.title || "",
       summary: kn.summary || "",
       tags: kn.tags || [],
