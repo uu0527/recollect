@@ -54,6 +54,44 @@
   }
 
   // ============================================================
+  // Image Validation / Normalization（数据进入 saved store 前清洗）
+  // ============================================================
+  // 小红书平台 placeholder / fallback 资源（非真实图片）全部过滤
+  const IMAGE_BLOCKLIST_HOSTS = ["picasso-static.xiaohongshu.com"];
+  const IMAGE_BLOCKLIST_PATHS = ["fe-platform"];
+
+  // 判断单个图片 URL 是否有效
+  function isValidImage(url) {
+    if (url == null) return false;
+    const u = String(url).trim();
+    if (!u) return false;                        // 空字符串
+    if (!/^https?:\/\//i.test(u)) return false;  // 非 http(s) URL
+    try {
+      const parsed = new URL(u);
+      const host = parsed.hostname.toLowerCase();
+      // 小红书平台 placeholder / fallback 资源
+      if (IMAGE_BLOCKLIST_HOSTS.some((h) => host === h || host.endsWith("." + h))) return false;
+      if (IMAGE_BLOCKLIST_PATHS.some((p) => parsed.pathname.indexOf(p) !== -1)) return false;
+      return true;
+    } catch (e) {
+      return false; // 无法解析的 URL
+    }
+  }
+
+  // 过滤数组中的无效图片
+  function sanitizeImages(urls) {
+    if (!Array.isArray(urls)) return [];
+    return urls.filter(isValidImage);
+  }
+
+  // 对单个 saved item 的 images 字段做清洗（返回新对象，不改原对象）
+  function normalizeImages(item) {
+    const imgs = sanitizeImages(item.images);
+    if (imgs.length === (item.images || []).length) return item; // 无变化，避免无谓复制
+    return Object.assign({}, item, { images: imgs });
+  }
+
+  // ============================================================
   // 数据层（mock adapter + frontend state）
   // ============================================================
   let savedItems = [];   // 全量（已过滤测试数据）
@@ -325,9 +363,13 @@
     if (!box) return;
     try {
       const raw = await fetchSaved();
-      savedItems = raw.filter(function (it) {
-        return !isTestItem(it); // 测试数据过滤
-      });
+      savedItems = raw
+        .filter(function (it) {
+          return !isTestItem(it); // 测试数据过滤
+        })
+        .map(function (it) {
+          return normalizeImages(it); // 图片质量清洗（历史数据重新加载时同样生效）
+        });
       renderSaved();
       return savedItems;
     } catch (err) {
