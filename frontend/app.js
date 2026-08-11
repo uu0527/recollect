@@ -207,3 +207,30 @@ function renderLibrary() {
   // 此函数仅作兼容占位，不再直接渲染。
 }
 
+// ===== Home 统计（Fix C: 使用真实 knowledge 数据，填充 homeStat*）=====
+// 数据源与 knowledge.js 一致（frontend/data/knowledge_mock.json，真实 Supabase 数据）
+async function initHome() {
+  try {
+    const resp = await fetch("data/knowledge_mock.json");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const items = data.items || [];
+    const cats = new Set(items.map((d) => d.topic || d.category_l1).filter(Boolean));
+    const tags = new Set(items.flatMap((d) => d.tags || []).filter(Boolean));
+    const total = el("homeStatTotal");
+    const c = el("homeStatCats");
+    const t = el("homeStatTags");
+    if (total) total.textContent = items.length;
+    if (c) c.textContent = cats.size;
+    if (t) t.textContent = tags.size;
+  } catch (e) {
+    // 静默：Home 统计失败不影响其他页面
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initHome);
+} else {
+  initHome();
+}
+
