@@ -251,7 +251,8 @@
 
   // Ask Agent: 保存当前 Knowledge Context 并跳转 AI Assistant
   // 公共逻辑: 用真实 note_id 设置 Context + 跳转 Assistant
-  function setKnowledgeContext(kn) {
+  // action: summary | key_points | chat（AI Actions 意图路由）
+  function setKnowledgeContext(kn, action) {
     if (!kn) return false;
     // 关键: 传真实 note_id（后端 Supabase knowledge 表按 note_id 标识）
     // 兼容旧 mock（只有 knowledge_id）与新数据（有 note_id）
@@ -264,10 +265,11 @@
       summary: kn.summary || "",
       tags: kn.tags || [],
       source_saved_ids: kn.source_saved_ids || [],
+      action: action || "chat",
     };
     const shell = window.RECOLLECT_SHELL;
     if (shell) shell.switchView("assistant");
-    // 让 Assistant 刷新 Context Panel
+    // 让 Assistant 刷新 Context Panel（并根据 action 自动填充/执行）
     if (window.RECOLLECT_ASSISTANT && typeof window.RECOLLECT_ASSISTANT.renderContext === "function") {
       window.RECOLLECT_ASSISTANT.renderContext();
     }
@@ -284,11 +286,12 @@
     setKnowledgeContext(currentKnowledge);
   };
 
-  // Saved Detail 的 AI Actions 按钮共用入口（Fix B + Init Fix）:
+  // Saved Detail 的 AI Actions 按钮共用入口（Fix B + Init Fix + Action Routing）:
   // 通过 note_id 找到对应 knowledge → 复用真实 note_id Context Contract
   // 修复（Save Detail Init）: knowledgeItems 只在 Knowledge 视图激活时加载；
   // 从 Saved → Detail 直接进入时为空 → 先自动加载，再查找。
-  window.askKnowledgeAgentById = async function (noteId) {
+  // action: summary | key_points | chat（Generate Summary / Extract Key Points / Ask Agent）
+  window.askKnowledgeAgentById = async function (noteId, action) {
     // Case B: knowledgeItems 未加载 → 自动加载（幂等：loadKnowledge 内部有 knowledgeLoaded 判断）
     if (!knowledgeItems || knowledgeItems.length === 0) {
       await loadKnowledge();
@@ -300,7 +303,7 @@
       console.error("[askKnowledgeAgentById] 未找到 note_id:", noteId, "knowledgeItems:", knowledgeItems.length);
       return false;
     }
-    return setKnowledgeContext(kn);
+    return setKnowledgeContext(kn, action);
   };
 
   // ============================================================

@@ -306,17 +306,23 @@
       (it.source
         ? '<a class="detail-link" href="' + escapeHtml(it.source) + '" target="_blank" rel="noopener">打开原始链接 ↗</a>'
         : "");
-    // AI Actions 按钮绑定（Fix B）: 3 个按钮统一复用真实 note_id Context Contract。
-    // backend 仅提供 /api/chat（无独立 summary/key_points API），因此
-    // Generate Summary / Extract Key Points 也通过 Ask Agent 获取（诚实，不伪造）。
-    const aiIds = ["aiGenerateSummary", "aiAskAgent", "aiExtractPoints"];
-    aiIds.forEach(function (id) {
+    // AI Actions 按钮绑定（Fix B + Action Routing）: 3 个按钮复用真实 note_id
+    // Context Contract，但携带不同 action 意图:
+    //   Generate Summary → summary（自动填充总结 prompt 并执行）
+    //   Ask Agent        → chat（用户自行输入）
+    //   Extract Key Points → key_points（自动填充要点 prompt 并执行）
+    const aiActions = {
+      aiGenerateSummary: "summary",
+      aiAskAgent: "chat",
+      aiExtractPoints: "key_points",
+    };
+    Object.keys(aiActions).forEach(function (id) {
       const btn = document.getElementById(id);
       if (btn) {
         btn.onclick = function () {
           if (window.askKnowledgeAgentById) {
             // async: 内部自动加载 knowledgeItems（若未加载）→ 设置 Context → 跳转
-            window.askKnowledgeAgentById(noteId).then(function (ok) {
+            window.askKnowledgeAgentById(noteId, aiActions[id]).then(function (ok) {
               if (!ok) {
                 // 无对应 knowledge（backend 无独立 API）：提示，不伪造
                 alert("该收藏暂无结构化知识。请先在 Knowledge 页面确认，或直接在 AI Assistant 提问。");

@@ -189,6 +189,22 @@
       '<span class="ctx-tags">' + tags + "</span>" +
       "</div>";
     if (input) input.placeholder = "基于「" + (ctx.title || "").slice(0, 24) + "」提问…";
+    // AI Actions 意图路由（summary / key_points）: 自动填充默认问题并执行
+    if (ctx.action === "summary" || ctx.action === "key_points") {
+      const prompt =
+        ctx.action === "summary"
+          ? "Please summarize this saved knowledge. Include the main idea, important facts, and key takeaway."
+          : "Please extract the key points from this saved knowledge and organize them into structured bullet points.";
+      // 消费 action（防止切换视图时重复触发）
+      window.RECOLLECT_CONTEXT.action = "chat";
+      if (input) {
+        input.value = prompt;
+        // 延迟到视图切换完成后自动执行
+        setTimeout(function () {
+          if (window.sendAssistant) window.sendAssistant();
+        }, 150);
+      }
+    }
   }
 
   window.clearAssistantContext = function () {
