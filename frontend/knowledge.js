@@ -250,10 +250,9 @@
   };
 
   // Ask Agent: 保存当前 Knowledge Context 并跳转 AI Assistant
-  window.askKnowledgeAgent = function () {
-    // 当前打开的 Knowledge（openKnowledgeDetail 时记录）
-    const kn = currentKnowledge;
-    if (!kn) return;
+  // 公共逻辑: 用真实 note_id 设置 Context + 跳转 Assistant
+  function setKnowledgeContext(kn) {
+    if (!kn) return false;
     // 关键: 传真实 note_id（后端 Supabase knowledge 表按 note_id 标识）
     // 兼容旧 mock（只有 knowledge_id）与新数据（有 note_id）
     const realId = kn.note_id || kn.knowledge_id;
@@ -277,6 +276,22 @@
       input.placeholder = "基于「" + (kn.title || "").slice(0, 24) + "」提问…";
       input.focus();
     }
+    return true;
+  }
+
+  window.askKnowledgeAgent = function () {
+    // 当前打开的 Knowledge（openKnowledgeDetail 时记录）
+    setKnowledgeContext(currentKnowledge);
+  };
+
+  // Saved Detail 的 AI Actions 按钮共用入口（Fix B）:
+  // 通过 note_id 找到对应 knowledge → 复用真实 note_id Context Contract
+  window.askKnowledgeAgentById = function (noteId) {
+    const kn = knowledgeItems.find(
+      (x) => (x.note_id || x.knowledge_id) === noteId
+    );
+    if (!kn) return false;
+    return setKnowledgeContext(kn);
   };
 
   // ============================================================

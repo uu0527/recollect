@@ -268,6 +268,22 @@
       (it.source
         ? '<a class="detail-link" href="' + escapeHtml(it.source) + '" target="_blank" rel="noopener">打开原始链接 ↗</a>'
         : "");
+    // AI Actions 按钮绑定（Fix B）: 3 个按钮统一复用真实 note_id Context Contract。
+    // backend 仅提供 /api/chat（无独立 summary/key_points API），因此
+    // Generate Summary / Extract Key Points 也通过 Ask Agent 获取（诚实，不伪造）。
+    const aiIds = ["aiGenerateSummary", "aiAskAgent", "aiExtractPoints"];
+    aiIds.forEach(function (id) {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.onclick = function () {
+          if (window.askKnowledgeAgentById && window.askKnowledgeAgentById(noteId)) {
+            return;
+          }
+          // 无对应 knowledge（backend 无独立 API）：提示，不伪造
+          alert("该收藏暂无结构化知识。请先在 Knowledge 页面确认，或直接在 AI Assistant 提问。");
+        };
+      }
+    });
     const shell = window.RECOLLECT_SHELL;
     if (shell) shell.switchView("saved-detail");
   };
