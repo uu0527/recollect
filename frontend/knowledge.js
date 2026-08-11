@@ -284,13 +284,22 @@
     setKnowledgeContext(currentKnowledge);
   };
 
-  // Saved Detail 的 AI Actions 按钮共用入口（Fix B）:
+  // Saved Detail 的 AI Actions 按钮共用入口（Fix B + Init Fix）:
   // 通过 note_id 找到对应 knowledge → 复用真实 note_id Context Contract
-  window.askKnowledgeAgentById = function (noteId) {
+  // 修复（Save Detail Init）: knowledgeItems 只在 Knowledge 视图激活时加载；
+  // 从 Saved → Detail 直接进入时为空 → 先自动加载，再查找。
+  window.askKnowledgeAgentById = async function (noteId) {
+    // Case B: knowledgeItems 未加载 → 自动加载（幂等：loadKnowledge 内部有 knowledgeLoaded 判断）
+    if (!knowledgeItems || knowledgeItems.length === 0) {
+      await loadKnowledge();
+    }
     const kn = knowledgeItems.find(
       (x) => (x.note_id || x.knowledge_id) === noteId
     );
-    if (!kn) return false;
+    if (!kn) {
+      console.error("[askKnowledgeAgentById] 未找到 note_id:", noteId, "knowledgeItems:", knowledgeItems.length);
+      return false;
+    }
     return setKnowledgeContext(kn);
   };
 

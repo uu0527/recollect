@@ -276,11 +276,17 @@
       const btn = document.getElementById(id);
       if (btn) {
         btn.onclick = function () {
-          if (window.askKnowledgeAgentById && window.askKnowledgeAgentById(noteId)) {
-            return;
+          if (window.askKnowledgeAgentById) {
+            // async: 内部自动加载 knowledgeItems（若未加载）→ 设置 Context → 跳转
+            window.askKnowledgeAgentById(noteId).then(function (ok) {
+              if (!ok) {
+                // 无对应 knowledge（backend 无独立 API）：提示，不伪造
+                alert("该收藏暂无结构化知识。请先在 Knowledge 页面确认，或直接在 AI Assistant 提问。");
+              }
+            });
+          } else {
+            alert("该收藏暂无结构化知识。请先在 Knowledge 页面确认，或直接在 AI Assistant 提问。");
           }
-          // 无对应 knowledge（backend 无独立 API）：提示，不伪造
-          alert("该收藏暂无结构化知识。请先在 Knowledge 页面确认，或直接在 AI Assistant 提问。");
         };
       }
     });
