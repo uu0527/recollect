@@ -73,6 +73,14 @@ class AgentOrchestrator:
         # 1. 检索 knowledge
         sources = self.retriever.retrieve(query)
 
+        # 1.5 Source Attribution（explicit context）:
+        # 当 context_applied=true，把实际注入的 Knowledge Asset 也作为 source 返回。
+        # 与 Retriever sources 按 note_id 去重合并；explicit context source 优先保留。
+        # 仅在成功解析并注入时才加（不伪造；context_applied=false 不加）。
+        if context_assets:
+            from backend.agent.retriever import Retriever
+            sources = self._merge_explicit_context_source(sources, context_assets)
+
         # 2. 用户记忆（long-term，不受 context 影响）
         memory = self.memory.get_context(session_id=session_id)
 
@@ -146,6 +154,40 @@ class AgentOrchestrator:
                 ),
             },
         }
+
+    # ------------------------------------------------------------
+    # Source Attribution（explicit context）
+    # ------------------------------------------------------------
+    @staticmethod
+    def _merge_explicit_context_source(
+        retriever_sources: List[Dict[str, Any]],
+        context_assets: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """把实际注入的 Knowledge Asset 转成标准 source，与 Retriever sources 去重合并。
+
+        规则:
+        - explicit context source 优先（放前面）
+        - 按 note_id 去重（Retriever 若同时命中同一知识，不重复）
+        - 复用 retriever._to_source 的标准 schema（note_id/title/url/category_l1/tldr）
+        """
+        from backend.agent.retriever import Retriever
+
+        merged: List[Dict[str, Any]] = []
+        seen_ids = set()
+        # 1. explicit context sources（优先）
+        for asset in context_assets:
+            src = Retriever._to_source(asset)
+            nid = src.get("note_id", "")
+            if nid and nid not in seen_ids:
+                merged.append(src)
+                seen_ids.add(nid)
+        # 2. retriever sources（补充，去重）
+        for src in retriever_sources:
+            nid = src.get("note_id", "")
+            if nid and nid not in seen_ids:
+                merged.append(src)
+                seen_ids.add(nid)
+        return merged
 
     # ------------------------------------------------------------
     # Knowledge Context Resolver + Router 决策
